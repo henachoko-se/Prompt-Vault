@@ -104,6 +104,37 @@ def build_remote_url(url, token):
         url = url.replace('https://', f'https://{token}@', 1)
     return url
 
+# ── フォルダ説明 ────────────────────────────────────────────────────
+
+FOLDER_INFO_FILE = VAULT / '.folder-info.json'
+
+def load_folder_info():
+    if FOLDER_INFO_FILE.exists():
+        return json.loads(FOLDER_INFO_FILE.read_text(encoding='utf-8'))
+    return {}
+
+def save_folder_info(data):
+    FOLDER_INFO_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+
+@app.route('/api/folder-info')
+@login_required
+def api_folder_info_get():
+    return jsonify(load_folder_info())
+
+@app.route('/api/folder-info', methods=['POST'])
+@login_required
+def api_folder_info_post():
+    data = request.json
+    path = data.get('path', '').strip()
+    desc = data.get('description', '').strip()
+    info = load_folder_info()
+    if desc:
+        info[path] = desc
+    else:
+        info.pop(path, None)
+    save_folder_info(info)
+    return jsonify({'ok': True})
+
 # ── API: ファイルツリー ──────────────────────────────────────────────
 
 def build_tree(path, rel=''):

@@ -49,13 +49,29 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 }
 #help-side-btn:hover { background:#f0f9ff; color:#0969da; border-color:#93c5fd; }
 .folder-hd {
-  padding:7px 14px; cursor:pointer; color:#374151; display:flex; align-items:center; gap:6px;
+  padding:7px 14px 4px; cursor:pointer; color:#374151; display:flex; align-items:center; gap:6px;
   font-size:13px; font-weight:600; user-select:none;
   border-left:3px solid transparent;
 }
 .folder-hd:hover { background:#f3f4f6; }
+.folder-hd:hover .folder-edit-btn { opacity:1; }
 .folder-hd .arrow { font-size:9px; color:#9ca3af; transition:transform .15s; flex-shrink:0; }
 .folder-hd.open .arrow { transform:rotate(90deg); }
+.folder-edit-btn {
+  opacity:0; margin-left:auto; font-size:11px; color:#9ca3af; flex-shrink:0;
+  transition:opacity .15s; padding:1px 4px; border-radius:3px;
+}
+.folder-edit-btn:hover { color:var(--accent); background:var(--accent2); }
+.folder-desc {
+  padding:2px 14px 6px; font-size:11px; color:#6b7280; line-height:1.4;
+  border-left:3px solid transparent;
+}
+.folder-desc-input {
+  margin:2px 14px 6px; padding:4px 8px; font-size:11px; color:#374151;
+  border:1px solid #d1d5db; border-radius:4px; width:calc(100% - 28px);
+  font-family:inherit; outline:none;
+}
+.folder-desc-input:focus { border-color:var(--accent); }
 .folder-children { display:none; }
 .folder-children.open { display:block; }
 .file-row {
@@ -584,26 +600,70 @@ function pathToId(path) {
 })();
 
 // ═══ ファイルツリー ═══
+let folderInfoCache = {};
+
 function renderTreeNodes(nodes, container, depth) {
   nodes.forEach(node => {
     if (node.type === 'folder') {
+      const indent = 14 + depth * 14;
+
       // フォルダヘッダー
       const hd = document.createElement('div');
       hd.className = 'folder-hd';
-      hd.style.paddingLeft = (14 + depth * 14) + 'px';
-      hd.innerHTML = '<span class="arrow">▶</span> 📁 ' + node.name;
+      hd.style.paddingLeft = indent + 'px';
+      hd.innerHTML =
+        '<span class="arrow">▶</span> 📁 ' + node.name +
+        '<span class="folder-edit-btn" title="説明を編集">✏️</span>';
       container.appendChild(hd);
+
+      // 説明表示／編集エリア
+      const descWrap = document.createElement('div');
+      descWrap.style.paddingLeft = indent + 'px';
+      const desc = folderInfoCache[node.path] || '';
+      const descEl = document.createElement('div');
+      descEl.className = 'folder-desc';
+      descEl.textContent = desc;
+      descEl.style.display = desc ? 'block' : 'none';
+      descWrap.appendChild(descEl);
+      container.appendChild(descWrap);
+
+      // 説明編集ボタン
+      hd.querySelector('.folder-edit-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        // 既存のinputがあれば確定
+        const existing = descWrap.querySelector('.folder-desc-input');
+        if (existing) { existing.blur(); return; }
+        descEl.style.display = 'none';
+        const input = document.createElement('input');
+        input.className = 'folder-desc-input';
+        input.type = 'text';
+        input.placeholder = 'フォルダの説明を入力…';
+        input.value = folderInfoCache[node.path] || '';
+        descWrap.appendChild(input);
+        input.focus();
+        const save = async () => {
+          const val = input.value.trim();
+          descWrap.removeChild(input);
+          folderInfoCache[node.path] = val;
+          descEl.textContent = val;
+          descEl.style.display = val ? 'block' : 'none';
+          await api('/api/folder-info', 'POST', { path: node.path, description: val });
+        };
+        input.addEventListener('blur', save);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { input.value = folderInfoCache[node.path] || ''; input.blur(); } });
+      });
+
       // 子要素コンテナ
       const children = document.createElement('div');
       children.className = 'folder-children';
       renderTreeNodes(node.children, children, depth + 1);
       container.appendChild(children);
-      // 折りたたみトグル
+
+      // 折りたたみトグル（編集ボタン以外クリックで）
       hd.addEventListener('click', () => {
         hd.classList.toggle('open');
         children.classList.toggle('open');
       });
-      // デフォルトで開く（1階層目のみ）
       if (depth === 0) { hd.classList.add('open'); children.classList.add('open'); }
     } else {
       const id = pathToId(node.path);
@@ -630,12 +690,15 @@ function collectFolderPaths(nodes, depth, result) {
 
 async function refreshTree() {
   try {
-    const data = await api('/api/files');
+    const [data, info] = await Promise.all([
+      api('/api/files'),
+      api('/api/folder-info'),
+    ]);
+    folderInfoCache = info;
     const tree = document.getElementById('tree');
     tree.innerHTML = '';
     pathIdMap.clear();
     renderTreeNodes(data, tree, 0);
-    // 新規作成ダイアログのフォルダ選択肢を更新
     const folderSel = document.getElementById('new-folder');
     folderSel.innerHTML = '<option value="">ルート（フォルダなし）</option>';
     collectFolderPaths(data, 0, []).forEach(f => {
