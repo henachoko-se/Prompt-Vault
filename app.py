@@ -59,12 +59,19 @@ def save_config(data):
     CONFIG_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
 
 def init_git_remote():
-    """起動時に環境変数からGitリモートを自動設定する（クラウド環境用）"""
-    cfg = load_config()
-    url   = cfg.get('github_url', '')
-    token = cfg.get('github_token', '')
+    """起動時にGitHub設定を自動復元する（クラウド環境用）
+    環境変数 GITHUB_URL / GITHUB_TOKEN が設定されていれば
+    .config.json がなくても自動で接続状態に復元する。
+    """
+    url   = os.environ.get('GITHUB_URL', '')
+    token = os.environ.get('GITHUB_TOKEN', '')
     if not url:
-        return
+        return  # 環境変数未設定 = ローカル環境 → 何もしない
+
+    # .config.json が存在しない場合は環境変数から自動生成
+    if not CONFIG_FILE.exists():
+        save_config({'github_url': url, 'github_token': token})
+
     remote_url = build_remote_url(url, token)
     r = run_git('git remote')
     if 'origin' in r.stdout:
