@@ -18,7 +18,23 @@ IGNORE_FILES = {'app.py', 'pm.py', '.gitignore', 'start.bat', 'start.sh'}
 
 app = Flask(__name__)
 # セッション署名用の秘密鍵（環境変数 SECRET_KEY で上書き可能）
-app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+# 未設定の場合は .config.json に保存して再起動後も同じ鍵を使い回す
+def _get_or_create_secret_key():
+    env_key = os.environ.get('SECRET_KEY', '')
+    if env_key:
+        return env_key
+    # ローカル用: .config.json に保存して永続化
+    cfg_path = VAULT / '.config.json'
+    data = json.loads(cfg_path.read_text(encoding='utf-8')) if cfg_path.exists() else {}
+    if 'secret_key' not in data:
+        data['secret_key'] = secrets.token_hex(32)
+        cfg_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+    return data['secret_key']
+
+app.secret_key = _get_or_create_secret_key()
+
+from datetime import timedelta
+app.permanent_session_lifetime = timedelta(days=30)  # 30日間ログイン維持
 
 # パスワード認証の設定
 # 環境変数 VAULT_PASSWORD が設定されていれば認証を有効化
@@ -355,6 +371,7 @@ def login():
     if request.method == 'POST':
         pw = request.form.get('password', '')
         if pw == VAULT_PASSWORD:
+            session.permanent = True  # 30日間クッキーを保持
             session['logged_in'] = True
             return redirect('/')
         error = 'パスワードが違います'
