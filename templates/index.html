@@ -7,46 +7,47 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --accent: #e8621a;
-  --accent2: #fff4ee;
-  --sidebar: 260px;
-  --header: 52px;
-  --footer: 58px;
-  --border: #e5e7eb;
-  --bg: #f7f8fa;
-  --dark: #1e1e2e;
+  --accent: #e8621a; --accent2: #fff4ee;
+  --sidebar: 260px; --header: 52px; --footer: 58px;
+  --border: #e5e7eb; --bg: #f7f8fa; --dark: #1e1e2e;
 }
 body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); height: 100vh; overflow: hidden; font-size: 14px; }
 
-/* ヘッダー */
+/* ── ヘッダー ── */
 #hdr {
-  position: fixed; top:0; left:0; right:0; height: var(--header);
-  background: var(--dark); color:#fff; display:flex; align-items:center;
-  padding: 0 14px; gap:10px; z-index:200; box-shadow: 0 2px 6px rgba(0,0,0,.3);
+  position:fixed; top:0; left:0; right:0; height:var(--header);
+  background:var(--dark); color:#fff; display:flex; align-items:center;
+  padding:0 14px; gap:8px; z-index:200; box-shadow:0 2px 6px rgba(0,0,0,.3);
 }
 #hdr .logo { font-weight:700; font-size:17px; color:#ff8c42; }
 #hdr .sp { flex:1; }
-#gh-pill {
-  font-size:12px; padding:4px 12px; border-radius:20px; cursor:pointer;
-  background:#2a2a3e; border:1px solid #555; color:#aaa; display:flex; align-items:center; gap:6px;
-  user-select:none;
-}
-#gh-pill:hover { background:#333; }
-#gh-pill.ok { border-color:#3fb950; color:#3fb950; }
 #hdr-changes { font-size:11px; color:#ff8c42; }
+.hdr-btn {
+  font-size:12px; padding:4px 12px; border-radius:20px; cursor:pointer;
+  background:#2a2a3e; border:1px solid #555; color:#aaa;
+  display:flex; align-items:center; gap:5px; user-select:none;
+}
+.hdr-btn:hover { background:#333; }
+.hdr-btn.ok { border-color:#3fb950; color:#3fb950; }
 
-/* サイドバー */
+/* ── サイドバー ── */
 #sidebar {
   position:fixed; top:var(--header); left:0; bottom:var(--footer);
   width:var(--sidebar); background:#fff; border-right:1px solid var(--border);
   overflow-y:auto; display:flex; flex-direction:column;
 }
 #new-btn {
-  margin:10px 10px 6px; padding:7px 12px; border:1.5px dashed #d1d5db; border-radius:7px;
+  margin:10px 10px 4px; padding:7px 12px; border:1.5px dashed #d1d5db; border-radius:7px;
   font-size:12px; color:#6b7280; cursor:pointer; background:none; text-align:left;
   display:flex; align-items:center; gap:6px;
 }
 #new-btn:hover { border-color:var(--accent); color:var(--accent); background:#fff8f5; }
+#help-side-btn {
+  margin:0 10px 8px; padding:6px 12px; border-radius:7px; font-size:12px;
+  color:#6b7280; cursor:pointer; background:none; border:1.5px solid #e5e7eb;
+  display:flex; align-items:center; gap:6px; text-align:left;
+}
+#help-side-btn:hover { background:#f0f9ff; color:#0969da; border-color:#93c5fd; }
 .folder-lbl { padding:8px 14px 4px; font-size:10px; font-weight:700; color:#9ca3af; letter-spacing:.5px; text-transform:uppercase; }
 .file-row {
   padding:8px 14px 8px 26px; cursor:pointer; color:#374151; display:flex; align-items:center; gap:7px;
@@ -56,9 +57,8 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 .file-row:hover { background:#f3f4f6; }
 .file-row.active { background:var(--accent2); color:var(--accent); font-weight:600; border-left-color:var(--accent); }
 .file-row .dot { width:7px; height:7px; background:var(--accent); border-radius:50%; margin-left:auto; flex-shrink:0; display:none; }
-.file-row.modified .dot { display:block; }
 
-/* メイン */
+/* ── メイン ── */
 #main {
   position:fixed; top:var(--header); left:var(--sidebar); right:0; bottom:var(--footer);
   display:flex; flex-direction:column; background:#fff;
@@ -66,35 +66,38 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 #file-bar {
   padding:8px 18px; border-bottom:1px solid var(--border); display:none; align-items:center; gap:8px;
 }
-#file-bar .fname { font-weight:600; font-size:14px; color:#111; }
+#file-bar .fname { font-weight:600; color:#111; }
 #file-bar .fpath { font-size:11px; color:#9ca3af; }
 #unsaved { font-size:11px; color:var(--accent); display:none; margin-left:4px; }
-
-/* タブ */
-#tabs { display:none; gap:0; background:#fff; border-bottom:1px solid var(--border); padding:0 18px; }
+#tabs { display:none; background:#fff; border-bottom:1px solid var(--border); padding:0 18px; }
 .tab {
-  padding:9px 16px; font-size:13px; color:#6b7280; cursor:pointer; border-bottom:2.5px solid transparent;
-  user-select:none; display:flex; align-items:center; gap:5px;
+  display:inline-flex; align-items:center; gap:4px;
+  padding:9px 16px; font-size:13px; color:#6b7280; cursor:pointer;
+  border-bottom:2.5px solid transparent; user-select:none;
 }
 .tab:hover { color:var(--accent); }
 .tab.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
-
-/* コンテンツ */
 #content { flex:1; overflow-y:auto; padding:20px; }
 
-/* ウェルカム */
-#pane-welcome { text-align:center; padding:80px 20px; }
-#pane-welcome .icon { font-size:60px; margin-bottom:16px; }
+/* ── ウェルカム ── */
+#pane-welcome { text-align:center; padding:60px 20px; }
 #pane-welcome h2 { font-size:26px; color:#1e1e2e; margin-bottom:8px; }
 #pane-welcome p { color:#9ca3af; font-size:14px; }
+.welcome-card {
+  display:inline-flex; align-items:center; gap:10px; margin:8px;
+  padding:14px 20px; border:1.5px solid var(--border); border-radius:10px;
+  font-size:13px; color:#374151; cursor:pointer; background:#fff;
+}
+.welcome-card:hover { border-color:var(--accent); background:var(--accent2); color:var(--accent); }
 
-/* 表示 */
-#pane-view { max-width:800px; margin:0 auto; line-height:1.8; }
+/* ── 表示 ── */
+#pane-view { max-width:800px; margin:0 auto; line-height:1.85; }
 #pane-view h1 { font-size:22px; border-bottom:2px solid var(--border); padding-bottom:8px; margin-bottom:16px; }
-#pane-view h2 { font-size:17px; margin:20px 0 8px; color:#1f2937; }
+#pane-view h2 { font-size:17px; margin:22px 0 8px; color:#1f2937; }
 #pane-view h3 { font-size:15px; margin:16px 0 6px; color:#374151; }
 #pane-view p { margin:8px 0; color:#374151; }
 #pane-view ul,#pane-view ol { margin:8px 0 8px 20px; color:#374151; }
+#pane-view li { margin:4px 0; }
 #pane-view code { background:#f3f4f6; padding:2px 6px; border-radius:3px; font-size:12px; font-family:Consolas,monospace; }
 #pane-view pre { background:#1e1e2e; color:#d4d4d4; padding:14px; border-radius:8px; font-size:12px; overflow-x:auto; margin:12px 0; }
 #pane-view pre code { background:none; color:inherit; padding:0; }
@@ -104,8 +107,9 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 #pane-view td { padding:7px 12px; border:1px solid var(--border); font-size:13px; }
 #pane-view tr:nth-child(even) td { background:#fafafa; }
 #pane-view strong { color:#1f2937; }
+#pane-view hr { border:none; border-top:1px solid var(--border); margin:16px 0; }
 
-/* 編集 */
+/* ── 編集 ── */
 #edit-ta {
   width:100%; height:calc(100vh - var(--header) - var(--footer) - 52px - 40px - 20px);
   font-family:Consolas,'Cascadia Code',monospace; font-size:13px; line-height:1.7;
@@ -114,20 +118,16 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 }
 #edit-ta:focus { border-color:var(--accent); background:#fff; }
 
-/* 履歴 */
+/* ── 履歴 ── */
 .h-item { display:flex; align-items:flex-start; gap:10px; padding:12px 0; border-bottom:1px solid #f3f4f6; }
 .h-item:hover { background:#fafafa; cursor:pointer; }
 .h-hash { font-family:monospace; font-size:11px; background:#e5e7eb; padding:2px 7px; border-radius:4px; flex-shrink:0; }
 .h-msg { font-size:13px; font-weight:500; color:#111; }
 .h-date { font-size:11px; color:#9ca3af; margin-top:2px; }
-.h-btn { margin-left:auto; }
-.btn-sm2 {
-  font-size:12px; padding:4px 10px; border-radius:5px; cursor:pointer; border:1px solid var(--border);
-  background:#fff; color:#374151; white-space:nowrap; flex-shrink:0;
-}
+.btn-sm2 { font-size:12px; padding:4px 10px; border-radius:5px; cursor:pointer; border:1px solid var(--border); background:#fff; color:#374151; white-space:nowrap; flex-shrink:0; }
 .btn-sm2:hover { background:#f3f4f6; }
 
-/* 差分 */
+/* ── 差分 ── */
 #diff-ctrl { display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
 #diff-ctrl label { font-size:12px; color:#6b7280; }
 .sel2 { font-size:12px; padding:5px 8px; border:1px solid var(--border); border-radius:5px; background:#fff; }
@@ -138,7 +138,57 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 .d-ctx { padding:1px 10px; display:block; color:#57606a; }
 .d-none { padding:20px; text-align:center; color:#9ca3af; }
 
-/* フッター */
+/* ── ヘルプ ── */
+#pane-help { max-width:760px; margin:0 auto; padding-bottom:40px; }
+.help-hero {
+  background:linear-gradient(135deg, #1e1e2e 0%, #2d1f3d 100%);
+  color:#fff; border-radius:12px; padding:28px 28px 24px; margin-bottom:24px;
+}
+.help-hero h1 { font-size:22px; color:#ff8c42; margin-bottom:6px; }
+.help-hero p { font-size:13px; color:#aaa; line-height:1.7; }
+.help-section { margin-bottom:28px; }
+.help-section h2 {
+  font-size:15px; font-weight:700; color:#1e1e2e; margin-bottom:12px;
+  padding-bottom:6px; border-bottom:2px solid var(--accent);
+  display:flex; align-items:center; gap:6px;
+}
+.help-card {
+  background:#fff; border:1.5px solid var(--border); border-radius:10px;
+  padding:14px 16px; margin-bottom:10px;
+}
+.help-card h3 { font-size:13px; font-weight:700; color:#1f2937; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.help-card p,
+.help-card li { font-size:13px; color:#4b5563; line-height:1.75; }
+.help-card ul { padding-left:18px; margin-top:4px; }
+.help-card li { margin:3px 0; }
+.help-step {
+  display:flex; gap:12px; align-items:flex-start; padding:10px 0;
+  border-bottom:1px solid #f3f4f6;
+}
+.help-step:last-child { border-bottom:none; }
+.step-num {
+  width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff;
+  font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;
+}
+.step-body h4 { font-size:13px; font-weight:600; color:#1f2937; margin-bottom:3px; }
+.step-body p { font-size:12px; color:#6b7280; line-height:1.65; }
+.step-body code { background:#f3f4f6; padding:1px 5px; border-radius:3px; font-size:11px; font-family:Consolas,monospace; }
+.help-tag {
+  display:inline-block; font-size:11px; padding:2px 8px; border-radius:4px;
+  font-weight:600; margin-right:4px;
+}
+.tag-blue { background:#ddf4ff; color:#0969da; }
+.tag-green { background:#dcfce7; color:#166534; }
+.tag-orange { background:#fff7ed; color:#c2410c; }
+.tag-gray { background:#f3f4f6; color:#374151; }
+.help-analogy {
+  background:#fff7ed; border:1.5px solid #fed7aa; border-radius:8px;
+  padding:12px 14px; margin:10px 0; font-size:13px; color:#78350f; line-height:1.7;
+}
+.help-analogy strong { color:#c2410c; }
+.kb { display:inline-block; background:#e5e7eb; border:1px solid #d1d5db; border-radius:4px; padding:1px 6px; font-size:11px; font-family:monospace; }
+
+/* ── フッター ── */
 #footer {
   position:fixed; bottom:0; left:0; right:0; height:var(--footer);
   background:#fff; border-top:1px solid var(--border);
@@ -147,7 +197,7 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 #ci { flex:1; border:1.5px solid var(--border); border-radius:6px; padding:8px 12px; font-size:13px; outline:none; }
 #ci:focus { border-color:var(--accent); }
 #ci::placeholder { color:#bbb; }
-.fbtn { padding:8px 16px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; border:none; display:flex; align-items:center; gap:5px; white-space:nowrap; }
+.fbtn { padding:8px 15px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; border:none; display:flex; align-items:center; gap:5px; white-space:nowrap; }
 .fbtn-save { background:var(--accent); color:#fff; }
 .fbtn-save:hover { background:#c9530e; }
 .fbtn-push { background:#2da44e; color:#fff; }
@@ -155,15 +205,12 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 .fbtn-pull { background:#0969da; color:#fff; }
 .fbtn-pull:hover { background:#075bb5; }
 
-/* ダイアログ */
-dialog {
-  border:none; border-radius:12px; padding:0; box-shadow:0 10px 40px rgba(0,0,0,.25);
-  max-width:480px; width:95vw;
-}
+/* ── ダイアログ ── */
+dialog { border:none; border-radius:12px; padding:0; box-shadow:0 10px 40px rgba(0,0,0,.25); max-width:480px; width:95vw; }
 dialog::backdrop { background:rgba(0,0,0,.5); }
 .dlg-hdr { background:var(--dark); color:#fff; padding:14px 18px; display:flex; align-items:center; gap:8px; border-radius:12px 12px 0 0; }
 .dlg-hdr .dlg-title { font-weight:600; flex:1; }
-.dlg-close { background:none; border:none; color:#aaa; font-size:18px; cursor:pointer; padding:0 4px; }
+.dlg-close { background:none; border:none; color:#aaa; font-size:18px; cursor:pointer; padding:0 4px; line-height:1; }
 .dlg-close:hover { color:#fff; }
 .dlg-body { padding:18px; }
 .dlg-foot { padding:12px 18px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px; }
@@ -171,7 +218,7 @@ label.lbl { display:block; font-size:12px; font-weight:600; color:#374151; margi
 label.lbl:first-child { margin-top:0; }
 .inp { width:100%; border:1.5px solid var(--border); border-radius:6px; padding:8px 10px; font-size:13px; outline:none; }
 .inp:focus { border-color:var(--accent); }
-.hint { font-size:11px; color:#9ca3af; margin-top:4px; line-height:1.5; }
+.hint { font-size:11px; color:#9ca3af; margin-top:4px; line-height:1.6; }
 .btn-main { padding:8px 18px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; border:none; background:var(--accent); color:#fff; }
 .btn-main:hover { background:#c9530e; }
 .btn-sec { padding:8px 16px; border-radius:6px; font-size:13px; cursor:pointer; border:1.5px solid var(--border); background:#fff; color:#374151; }
@@ -181,20 +228,13 @@ label.lbl:first-child { margin-top:0; }
 .inp-row { display:flex; gap:6px; }
 .inp-row .inp { flex:1; }
 
-/* トースト */
+/* ── トースト ── */
 #toast-box { position:fixed; top:62px; right:16px; z-index:9999; display:flex; flex-direction:column; gap:6px; }
-.toast {
-  padding:10px 16px; border-radius:8px; font-size:13px; color:#fff;
-  box-shadow:0 4px 16px rgba(0,0,0,.2); max-width:360px;
-  animation: toastIn .2s ease;
-}
+.toast { padding:10px 16px; border-radius:8px; font-size:13px; color:#fff; box-shadow:0 4px 16px rgba(0,0,0,.2); max-width:380px; animation:toastIn .2s ease; }
 .toast.ok { background:#2da44e; }
 .toast.err { background:#cf222e; }
 .toast.info { background:#0969da; }
 @keyframes toastIn { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:none} }
-
-/* エラー表示 */
-#err-bar { background:#fff3cd; color:#856404; padding:8px 18px; font-size:12px; display:none; border-bottom:1px solid #ffc107; }
 </style>
 </head>
 <body>
@@ -205,48 +245,56 @@ label.lbl:first-child { margin-top:0; }
   <span class="logo">Prompt Vault</span>
   <span class="sp"></span>
   <span id="hdr-changes"></span>
-  <div id="gh-pill" onclick="dlgGH.showModal()">
-    <span>⚙</span>
-    <span id="gh-txt">GitHub 未設定</span>
-  </div>
+  <div class="hdr-btn" onclick="showHelp()">❓ 使い方</div>
+  <div id="gh-pill" class="hdr-btn">⚙ <span id="gh-txt">GitHub 未設定</span></div>
 </div>
 
 <!-- サイドバー -->
 <div id="sidebar">
   <button id="new-btn" onclick="dlgNew.showModal()">＋ 新規プロンプト</button>
+  <button id="help-side-btn" onclick="showHelp()">❓ 使い方・GitHub接続ガイド</button>
   <div id="tree"></div>
 </div>
 
 <!-- メイン -->
 <div id="main">
-  <div id="err-bar"></div>
   <div id="file-bar">
     <span style="color:var(--accent);">📄</span>
     <span class="fname" id="fname"></span>
     <span class="fpath" id="fpath"></span>
     <span id="unsaved">● 未保存</span>
-    <span class="sp" style="flex:1"></span>
+    <span style="flex:1"></span>
   </div>
-
-  <div id="tabs" style="display:none">
-    <div class="tab active" id="tab-view" onclick="showTab('view')">👁 表示</div>
-    <div class="tab" id="tab-edit" onclick="showTab('edit')">✏️ 編集</div>
-    <div class="tab" id="tab-hist" onclick="showTab('hist')">🕐 履歴</div>
-    <div class="tab" id="tab-diff" onclick="showTab('diff')">± 差分</div>
+  <div id="tabs">
+    <div class="tab active" id="tab-view"  onclick="showTab('view')">👁 表示</div>
+    <div class="tab"        id="tab-edit"  onclick="showTab('edit')">✏️ 編集</div>
+    <div class="tab"        id="tab-hist"  onclick="showTab('hist')">🕐 履歴</div>
+    <div class="tab"        id="tab-diff"  onclick="showTab('diff')">± 差分</div>
   </div>
-
   <div id="content">
-    <div id="pane-welcome">
-      <div class="icon">📦</div>
-      <h2>Prompt Vault</h2>
-      <p>左のサイドバーからプロンプトを選択してください</p>
-      <p style="margin-top:6px; font-size:12px; color:#bbb;">「＋新規プロンプト」で新しいプロンプトを作成できます</p>
+
+    <!-- ウェルカム -->
+    <div id="pane-welcome" style="text-align:center;padding:60px 20px;">
+      <div style="font-size:60px;margin-bottom:16px;">📦</div>
+      <h2 style="font-size:26px;color:#1e1e2e;margin-bottom:8px;">Prompt Vault</h2>
+      <p style="color:#9ca3af;">左のサイドバーからプロンプトを選んでください</p>
+      <div style="margin-top:24px;">
+        <div class="welcome-card" onclick="showHelp()">❓ 使い方・GitHub接続ガイドを見る</div>
+      </div>
     </div>
+
+    <!-- 表示 -->
     <div id="pane-view" style="display:none"></div>
+
+    <!-- 編集 -->
     <div id="pane-edit" style="display:none">
       <textarea id="edit-ta" spellcheck="false" oninput="onEdit()"></textarea>
     </div>
+
+    <!-- 履歴 -->
     <div id="pane-hist" style="display:none"><div id="hist-list"></div></div>
+
+    <!-- 差分 -->
     <div id="pane-diff" style="display:none">
       <div id="diff-ctrl">
         <label>比較元:</label>
@@ -260,8 +308,174 @@ label.lbl:first-child { margin-top:0; }
       </div>
       <div id="diff-out"></div>
     </div>
-  </div>
-</div>
+
+    <!-- ヘルプ -->
+    <div id="pane-help" style="display:none">
+      <div class="help-hero">
+        <h1>📦 Prompt Vault — 使い方ガイド</h1>
+        <p>このツールは、AIプロンプトの作成・編集・バージョン管理を一元化するツールです。<br>
+           画面の見方から GitHub 連携まで、すべてここで確認できます。</p>
+      </div>
+
+      <!-- 画面の見方 -->
+      <div class="help-section">
+        <h2>🖥️ 画面の見方</h2>
+        <div class="help-card">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr style="background:#f9fafb;">
+              <th style="padding:8px 12px;border:1px solid var(--border);font-size:12px;width:140px;">エリア</th>
+              <th style="padding:8px 12px;border:1px solid var(--border);font-size:12px;">説明</th>
+            </tr>
+            <tr><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;font-weight:600;">左サイドバー</td><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;">プロンプトの一覧。クリックで開く。「＋新規プロンプト」で新規作成。</td></tr>
+            <tr><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;font-weight:600;">👁 表示タブ</td><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;">プロンプトの内容を読みやすく表示します（Markdown形式で整形）。</td></tr>
+            <tr><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;font-weight:600;">✏️ 編集タブ</td><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;">プロンプトを直接編集できます。<span class="kb">Ctrl</span>+<span class="kb">S</span> で保存。</td></tr>
+            <tr><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;font-weight:600;">🕐 履歴タブ</td><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;">過去に保存したバージョンの一覧。「👁 見る」で内容確認、戻すことも可能。</td></tr>
+            <tr><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;font-weight:600;">± 差分タブ</td><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;">どこが変わったか色つきで確認できます（緑＝追加、赤＝削除）。</td></tr>
+            <tr><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;font-weight:600;">下のバー</td><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;">コメントを入力して「💾 保存」でバージョンを記録。Push/Pullでクラウドと同期。</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- 基本的な使い方 -->
+      <div class="help-section">
+        <h2>📝 基本的な使い方</h2>
+        <div class="help-card">
+          <div class="help-step">
+            <div class="step-num">1</div>
+            <div class="step-body"><h4>プロンプトを開く</h4><p>左サイドバーのファイル名をクリック → 右側にプロンプトが表示されます。</p></div>
+          </div>
+          <div class="help-step">
+            <div class="step-num">2</div>
+            <div class="step-body"><h4>プロンプトを編集する</h4><p>「✏️ 編集」タブをクリック → 直接テキストを書き換えます。<br>編集中に <span class="kb">Ctrl</span>+<span class="kb">S</span> を押すとファイルが保存されます（まだバージョンは記録されません）。</p></div>
+          </div>
+          <div class="help-step">
+            <div class="step-num">3</div>
+            <div class="step-body"><h4>バージョンを記録（保存コミット）</h4><p>画面下のコメント欄に変更内容を一言で書いて（例：<code>Q3に複数キャラ対応を追加</code>）、<br>「💾 保存」ボタンを押します。これがバージョン記録（コミット）です。</p></div>
+          </div>
+          <div class="help-step">
+            <div class="step-num">4</div>
+            <div class="step-body"><h4>過去に戻す</h4><p>「🕐 履歴」タブ → 戻りたいバージョンの「👁 見る」→ 「このバージョンに戻す」。</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- バージョン管理とは -->
+      <div class="help-section">
+        <h2>🗂️ バージョン管理って何？</h2>
+        <div class="help-card">
+          <div class="help-analogy">
+            <strong>たとえ話：</strong> Wordの「上書き保存」は前のデータが消えてしまいます。<br>
+            バージョン管理は「名前をつけて保存」を自動でやってくれる仕組みです。<br>
+            <strong>「どんな変更をしたか」「いつ変更したか」が全部残るので、いつでも過去に戻れます。</strong>
+          </div>
+          <ul>
+            <li>✅ 「誤って大事な部分を削除してしまった」→ 前のバージョンに戻せる</li>
+            <li>✅ 「V1とV2のどこが違うか確認したい」→ 差分タブで色つき表示</li>
+            <li>✅ 「なぜこの変更をしたか後から分かる」→ コメットに理由を書いておく</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- GitHubとは -->
+      <div class="help-section">
+        <h2>☁️ GitHub って何？</h2>
+        <div class="help-card">
+          <div class="help-analogy">
+            <strong>たとえ話：</strong> このツールのバージョン管理はあなたのPC内だけで動いています。<br>
+            GitHubはそのデータをインターネット上（クラウド）に保存するサービスです。<br>
+            <strong>「PCが壊れてもデータが消えない」「別のPCからでも使える」</strong>ようになります。
+          </div>
+          <table style="width:100%;border-collapse:collapse;margin-top:10px;">
+            <tr style="background:#f9fafb;">
+              <th style="padding:8px 12px;border:1px solid var(--border);font-size:12px;width:130px;">操作</th>
+              <th style="padding:8px 12px;border:1px solid var(--border);font-size:12px;">意味</th>
+            </tr>
+            <tr><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;font-weight:600;"><span class="tag-green">⬆ Push</span></td><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;">PCのデータをGitHubに送信（バックアップ＆共有）</td></tr>
+            <tr><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;font-weight:600;"><span class="tag-blue">⬇ Pull</span></td><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;">GitHubのデータをPCに取得（別PCで更新した内容を同期）</td></tr>
+            <tr><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;font-weight:600;"><span class="tag-gray">リポジトリ</span></td><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;">ファイルやバージョン履歴をまとめて保存する「棚」のこと</td></tr>
+            <tr><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;font-weight:600;"><span class="tag-gray">コミット</span></td><td style="padding:8px 12px;border:1px solid var(--border);font-size:13px;">変更にコメントをつけて記録すること（このツールの「保存」ボタン）</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- GitHub接続手順 -->
+      <div class="help-section">
+        <h2>🔗 GitHub に接続する手順</h2>
+        <div class="help-card">
+          <div class="help-step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <h4>GitHubアカウントを持っているか確認</h4>
+              <p>お使いのリポジトリ: <code>https://github.com/henachoko-se/Prompt-Vault</code><br>
+              ✅ すでにリポジトリは作成済みです！</p>
+            </div>
+          </div>
+          <div class="help-step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <h4>Personal Access Token（PAT）を取得する</h4>
+              <p>PATとは、GitHubへのアクセスを許可する「鍵」のようなものです。<br>
+              ① GitHubにログイン → 右上のアイコン → <strong>Settings</strong><br>
+              ② 左メニュー最下部 → <strong>Developer settings</strong><br>
+              ③ <strong>Personal access tokens</strong> → <strong>Tokens (classic)</strong><br>
+              ④ <strong>Generate new token (classic)</strong> をクリック<br>
+              ⑤ Note（メモ）: <code>PromptVault</code> と入力<br>
+              ⑥ Expiration（有効期限）: <strong>No expiration</strong> または任意の期限<br>
+              ⑦ スコープ: <strong>repo</strong> にチェック ✅<br>
+              ⑧ <strong>Generate token</strong> → 表示されたトークン（<code>ghp_xxxx</code>）をコピー</p>
+            </div>
+          </div>
+          <div class="help-step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <h4>このツールで設定する</h4>
+              <p>右上の「⚙ GitHub 未設定」ボタンをクリック<br>
+              → リポジトリURL と コピーしたToken を入力 → 「保存」</p>
+            </div>
+          </div>
+          <div class="help-step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <h4>Push してみる</h4>
+              <p>下のフッターの「⬆ Push」ボタンを押すと、GitHubにデータが送信されます。<br>
+              はじめての Push 後は <code>https://github.com/henachoko-se/Prompt-Vault</code> で確認できます。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- よくある質問 -->
+      <div class="help-section">
+        <h2>❓ よくある質問</h2>
+        <div class="help-card" style="margin-bottom:8px;">
+          <h3>💾「保存」と <span class="kb">Ctrl</span>+<span class="kb">S</span> の違いは？</h3>
+          <p><span class="kb">Ctrl</span>+<span class="kb">S</span> → ファイルをPCに書き込むだけ（バージョン記録なし）<br>
+          フッターの「💾 保存」→ コメントをつけてバージョンとして記録（履歴に残る）<br>
+          <strong>編集後は必ず「💾 保存」まで押してください。</strong></p>
+        </div>
+        <div class="help-card" style="margin-bottom:8px;">
+          <h3>📤 Push はいつ押せばいい？</h3>
+          <p>「💾 保存」（コミット）した後に Push するとGitHubに反映されます。<br>
+          毎日の作業終わりに Push する習慣をつけると安心です。</p>
+        </div>
+        <div class="help-card" style="margin-bottom:8px;">
+          <h3>📁 新しいプロンプトを追加するには？</h3>
+          <p>左サイドバーの「＋ 新規プロンプト」→ フォルダ選択 → ファイル名入力 → 「作成」</p>
+        </div>
+        <div class="help-card">
+          <h3>🔄 過去のバージョンに戻したい</h3>
+          <p>対象プロンプトを開く → 「🕐 履歴」タブ → 戻りたいバージョンの「👁 見る」→「このバージョンに戻す」<br>
+          ※ 戻した後は忘れずに「💾 保存」でコミットしてください。</p>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:10px;padding:16px;background:#f9fafb;border-radius:8px;">
+        <p style="font-size:13px;color:#9ca3af;">このガイドはいつでも左サイドバーの「❓ 使い方」から確認できます</p>
+      </div>
+    </div><!-- /pane-help -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
 
 <!-- フッター -->
 <div id="footer">
@@ -271,30 +485,26 @@ label.lbl:first-child { margin-top:0; }
   <button class="fbtn fbtn-pull" onclick="doPull()">⬇ Pull</button>
 </div>
 
-<!-- トースト -->
 <div id="toast-box"></div>
 
 <!-- ダイアログ: GitHub設定 -->
 <dialog id="dlgGH">
   <div class="dlg-hdr">
-    <span>⚙</span>
-    <span class="dlg-title">GitHub 連携設定</span>
+    <span>⚙</span><span class="dlg-title">GitHub 連携設定</span>
     <button class="dlg-close" onclick="dlgGH.close()">✕</button>
   </div>
   <div class="dlg-body">
     <label class="lbl">リポジトリURL</label>
-    <input class="inp" id="gh-url" type="text" placeholder="https://github.com/ユーザー名/prompt_vault">
-    <div class="hint">GitHubで作成したリポジトリのURLを貼り付けてください</div>
-
+    <input class="inp" id="gh-url" type="text" placeholder="https://github.com/ユーザー名/リポジトリ名">
+    <div class="hint">例: https://github.com/henachoko-se/Prompt-Vault</div>
     <label class="lbl">Personal Access Token (PAT)</label>
     <div class="inp-row">
       <input class="inp" id="gh-tok" type="password" placeholder="ghp_xxxxxxxxxxxx">
       <button class="btn-sec" onclick="togglePW()" style="white-space:nowrap;">表示</button>
     </div>
     <div class="hint">
-      GitHub → Settings → Developer settings → Personal access tokens → Generate new token (classic)<br>
-      権限: <strong>repo</strong> にチェックして生成したトークンを貼り付け
-      <br><span id="gh-tok-status" style="color:#2da44e;"></span>
+      取得方法は「❓ 使い方」→「GitHub に接続する手順」を参照<br>
+      <span id="gh-tok-status" style="color:#2da44e;font-weight:600;"></span>
     </div>
   </div>
   <div class="dlg-foot">
@@ -306,8 +516,7 @@ label.lbl:first-child { margin-top:0; }
 <!-- ダイアログ: 新規ファイル -->
 <dialog id="dlgNew">
   <div class="dlg-hdr">
-    <span>📄</span>
-    <span class="dlg-title">新規プロンプト作成</span>
+    <span>📄</span><span class="dlg-title">新規プロンプト作成</span>
     <button class="dlg-close" onclick="dlgNew.close()">✕</button>
   </div>
   <div class="dlg-body">
@@ -325,8 +534,7 @@ label.lbl:first-child { margin-top:0; }
 <!-- ダイアログ: バージョン確認 -->
 <dialog id="dlgRestore" style="max-width:640px">
   <div class="dlg-hdr">
-    <span>🕐</span>
-    <span class="dlg-title" id="restore-title">バージョン確認</span>
+    <span>🕐</span><span class="dlg-title" id="restore-title">バージョン確認</span>
     <button class="dlg-close" onclick="dlgRestore.close()">✕</button>
   </div>
   <div class="dlg-body">
@@ -339,12 +547,8 @@ label.lbl:first-child { margin-top:0; }
 </dialog>
 
 <script>
-// ═══ 状態 ═══
-let cur = null;       // 現在開いているファイルパス
-let curTab = 'view';  // 現在のタブ
-let isDirty = false;  // 未保存フラグ
+let cur = null, curTab = 'view', isDirty = false;
 
-// ═══ 初期化 ═══
 (async function init() {
   await refreshTree();
   await refreshGHStatus();
@@ -359,7 +563,6 @@ async function refreshTree() {
     tree.innerHTML = '';
     const folderSel = document.getElementById('new-folder');
     folderSel.innerHTML = '<option value="">ルート</option>';
-
     data.forEach(group => {
       if (group.folder) {
         const lbl = document.createElement('div');
@@ -367,121 +570,98 @@ async function refreshTree() {
         lbl.textContent = '📁 ' + group.folder;
         tree.appendChild(lbl);
         const opt = document.createElement('option');
-        opt.value = group.folder;
-        opt.textContent = group.folder;
+        opt.value = group.folder; opt.textContent = group.folder;
         folderSel.appendChild(opt);
       }
       group.files.forEach(f => {
         const path = group.folder ? group.folder + '/' + f : f;
         const row = document.createElement('div');
         row.className = 'file-row';
-        row.id = 'fr_' + path.replace(/[^a-zA-Z0-9]/g, '_');
+        row.id = 'fr_' + path.replace(/[^a-zA-Z0-9]/g,'_');
         row.innerHTML = '📄 ' + f + '<span class="dot"></span>';
         row.addEventListener('click', () => openFile(path));
         tree.appendChild(row);
       });
     });
-  } catch(e) {
-    showErr('ファイル一覧の読み込みに失敗しました: ' + e.message);
-  }
+  } catch(e) { toast('ファイル一覧の読み込み失敗: ' + e.message, 'err'); }
 }
 
 // ═══ ファイルを開く ═══
 async function openFile(path) {
-  if (isDirty && cur) {
-    if (!confirm('未保存の変更があります。破棄しますか？')) return;
-  }
+  if (isDirty && cur && !confirm('未保存の変更があります。破棄しますか？')) return;
   try {
     const data = await api('/api/content?path=' + encodeURIComponent(path));
-    cur = path;
-    isDirty = false;
-
-    // タイトルバー
+    cur = path; isDirty = false;
     const parts = path.split('/');
-    document.getElementById('fname').textContent = parts[parts.length - 1];
+    document.getElementById('fname').textContent = parts[parts.length-1];
     document.getElementById('fpath').textContent = parts.length > 1 ? parts.slice(0,-1).join('/') + '/' : '';
     document.getElementById('file-bar').style.display = 'flex';
     document.getElementById('tabs').style.display = 'flex';
     document.getElementById('unsaved').style.display = 'none';
-
-    // アクティブ表示
     document.querySelectorAll('.file-row').forEach(r => r.classList.remove('active'));
     const el = document.getElementById('fr_' + path.replace(/[^a-zA-Z0-9]/g,'_'));
     if (el) el.classList.add('active');
-
-    // テキストエリアに入れる
     document.getElementById('edit-ta').value = data.content || '';
-
-    // 現タブを再描画
+    if (curTab === 'help') curTab = 'view';
     showTab(curTab);
-  } catch(e) {
-    toast('ファイルを開けませんでした: ' + e.message, 'err');
-  }
+  } catch(e) { toast('ファイルを開けませんでした: ' + e.message, 'err'); }
 }
 
 // ═══ タブ切り替え ═══
 function showTab(tab) {
-  if (!cur && tab !== 'welcome') {
-    ['pane-view','pane-edit','pane-hist','pane-diff'].forEach(id =>
-      document.getElementById(id).style.display = 'none'
-    );
+  curTab = tab;
+  const allPanes = ['welcome','view','edit','hist','diff','help'];
+  allPanes.forEach(p => document.getElementById('pane-'+p).style.display = 'none');
+  ['view','edit','hist','diff'].forEach(t => {
+    const el = document.getElementById('tab-'+t);
+    if (el) el.classList.toggle('active', t === tab);
+  });
+  if (!cur && tab !== 'help') {
     document.getElementById('pane-welcome').style.display = 'block';
     return;
   }
-  curTab = tab;
-  ['view','edit','hist','diff'].forEach(t => {
-    document.getElementById('tab-'+t)?.classList.toggle('active', t === tab);
-    document.getElementById('pane-'+t).style.display = t === tab ? 'block' : 'none';
-  });
-  document.getElementById('pane-welcome').style.display = 'none';
-
+  document.getElementById('pane-' + tab).style.display = 'block';
   if (tab === 'view') renderMD(document.getElementById('edit-ta').value);
   if (tab === 'hist') loadHist();
   if (tab === 'diff') loadDiff();
 }
 
+function showHelp() {
+  document.getElementById('file-bar').style.display = 'none';
+  document.getElementById('tabs').style.display = 'none';
+  ['welcome','view','edit','hist','diff'].forEach(p =>
+    document.getElementById('pane-'+p).style.display = 'none'
+  );
+  document.getElementById('pane-help').style.display = 'block';
+}
+
 // ═══ Markdown描画 ═══
 function renderMD(md) {
-  const pane = document.getElementById('pane-view');
-  // シンプルなMarkdown→HTML変換（CDN不要）
   let html = md
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    // コードブロック（先に処理）
-    .replace(/```(\w*)\n([\s\S]*?)```/g, (_,lang,code) => `<pre><code>${code.trimEnd()}</code></pre>`)
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    // 見出し
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    // 太字・斜体
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // 水平線
-    .replace(/^---$/gm, '<hr>')
-    // 箇条書き
-    .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>[\s\S]+?<\/li>)/gm, '<ul>$1</ul>')
-    .replace(/<\/ul>\n<ul>/g, '')
-    // 番号リスト
-    .replace(/^\d+\. (.+)$/gm, '<oli>$1</oli>')
-    .replace(/(<oli>[\s\S]+?<\/oli>)/gm, '<ol>$1</ol>')
-    .replace(/<\/ol>\n<ol>/g, '')
+    .replace(/```(\w*)\n([\s\S]*?)```/g, (_,l,c) => `<pre><code>${c.trimEnd()}</code></pre>`)
+    .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/^---$/gm,'<hr>')
+    .replace(/^[-*] (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>[\s\S]+?<\/li>)/gm,'<ul>$1</ul>')
+    .replace(/<\/ul>\n<ul>/g,'')
+    .replace(/^\d+\. (.+)$/gm,'<oli>$1</oli>')
+    .replace(/(<oli>[\s\S]+?<\/oli>)/gm,'<ol>$1</ol>')
+    .replace(/<\/ol>\n<ol>/g,'')
     .replace(/<oli>/g,'<li>').replace(/<\/oli>/g,'</li>')
-    // テーブル
-    .replace(/\|(.+)\|\n\|[-| :]+\|\n((?:\|.+\|\n?)+)/g, (m, hdr, rows) => {
-      const ths = hdr.split('|').filter(c=>c.trim()).map(c=>`<th>${c.trim()}</th>`).join('');
-      const trs = rows.trim().split('\n').map(row => {
-        const tds = row.split('|').filter(c=>c.trim()).map(c=>`<td>${c.trim()}</td>`).join('');
-        return `<tr>${tds}</tr>`;
-      }).join('');
+    .replace(/\|(.+)\|\n\|[-| :]+\|\n((?:\|.+\|\n?)+)/g,(m,hdr,rows)=>{
+      const ths=hdr.split('|').filter(c=>c.trim()).map(c=>`<th>${c.trim()}</th>`).join('');
+      const trs=rows.trim().split('\n').map(r=>`<tr>${r.split('|').filter(c=>c.trim()).map(c=>`<td>${c.trim()}</td>`).join('')}</tr>`).join('');
       return `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
     })
-    // 引用
-    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
-    // 改行
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/\n/g, '<br>');
-  pane.innerHTML = '<p>' + html + '</p>';
+    .replace(/^> (.+)$/gm,'<blockquote>$1</blockquote>')
+    .replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');
+  document.getElementById('pane-view').innerHTML = '<p>' + html + '</p>';
 }
 
 // ═══ 編集 ═══
@@ -489,232 +669,200 @@ function onEdit() {
   isDirty = true;
   document.getElementById('unsaved').style.display = 'inline';
 }
-
 document.addEventListener('keydown', async e => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+  if ((e.ctrlKey||e.metaKey) && e.key==='s') {
     e.preventDefault();
     if (!cur) return;
     await saveFile();
   }
 });
-
 async function saveFile() {
   try {
-    await api('/api/content', 'POST', { path: cur, content: document.getElementById('edit-ta').value });
+    await api('/api/content','POST',{path:cur, content:document.getElementById('edit-ta').value});
     isDirty = false;
     document.getElementById('unsaved').style.display = 'none';
-    document.getElementById('fr_' + cur.replace(/[^a-zA-Z0-9]/g,'_'))?.classList.remove('modified');
     toast('ファイルを保存しました（Ctrl+S）', 'ok');
     await refreshStatus();
-  } catch(e) { toast('保存失敗: ' + e.message, 'err'); }
+  } catch(e) { toast('保存失敗: '+e.message,'err'); }
 }
 
-// ═══ Git コミット ═══
+// ═══ コミット ═══
 async function doCommit() {
-  if (cur && curTab === 'edit' && isDirty) await saveFile();
+  if (cur && curTab==='edit' && isDirty) await saveFile();
   const msg = document.getElementById('ci').value.trim();
-  if (!msg) { toast('コメントを入力してください', 'err'); document.getElementById('ci').focus(); return; }
+  if (!msg) { toast('コメントを入力してください','err'); document.getElementById('ci').focus(); return; }
   try {
-    const d = await api('/api/commit', 'POST', { message: msg });
-    toast('✅ 保存しました！ [' + d.hash + '] ' + d.message, 'ok');
+    const d = await api('/api/commit','POST',{message:msg});
+    toast('✅ 保存しました！ ['+d.hash+'] '+d.message,'ok');
     document.getElementById('ci').value = '';
     await refreshStatus();
-    if (curTab === 'hist') loadHist();
-  } catch(e) { toast(e.message, 'err'); }
+    if (curTab==='hist') loadHist();
+  } catch(e) { toast(e.message,'err'); }
 }
 
 // ═══ ステータス ═══
 async function refreshStatus() {
   try {
     const d = await api('/api/status');
-    const el = document.getElementById('hdr-changes');
-    el.textContent = d.changes.length > 0 ? '● ' + d.changes.length + '件の未コミット変更' : '';
-  } catch(e) {}
+    document.getElementById('hdr-changes').textContent =
+      d.changes.length > 0 ? '● '+d.changes.length+'件の未コミット変更' : '';
+  } catch(e){}
 }
 
 // ═══ 履歴 ═══
 async function loadHist() {
-  const container = document.getElementById('hist-list');
-  container.innerHTML = '<div style="color:#9ca3af;padding:20px;">読み込み中...</div>';
+  const c = document.getElementById('hist-list');
+  c.innerHTML = '<div style="color:#9ca3af;padding:20px;">読み込み中...</div>';
   try {
-    const d = await api('/api/history?path=' + encodeURIComponent(cur || ''));
+    const d = await api('/api/history?path='+encodeURIComponent(cur||''));
     const sel = document.getElementById('diff-from');
     sel.innerHTML = '<option value="">未コミット変更</option>';
-
     if (!d.history.length) {
-      container.innerHTML = '<div style="color:#9ca3af;padding:40px;text-align:center;">まだ履歴がありません<br>「保存」ボタンでコミットしてください</div>';
+      c.innerHTML = '<div style="color:#9ca3af;padding:40px;text-align:center;">まだ履歴がありません<br>「💾 保存」ボタンでコミットしてください</div>';
       return;
     }
-    container.innerHTML = d.history.map(h => `
+    c.innerHTML = d.history.map(h=>`
       <div class="h-item">
         <span class="h-hash">${h.hash}</span>
         <div style="flex:1;min-width:0;">
           <div class="h-msg">${esc(h.message)}</div>
           <div class="h-date">${h.date}</div>
         </div>
-        <button class="btn-sm2 h-btn" onclick="previewVer('${h.full_hash}','${esc(h.message)}')">👁 見る</button>
+        <button class="btn-sm2" onclick="previewVer('${h.full_hash}','${esc(h.message)}')">👁 見る</button>
       </div>`).join('');
-
-    d.history.forEach(h => {
-      const opt = document.createElement('option');
-      opt.value = h.full_hash;
-      opt.textContent = h.hash + '  ' + h.date + '  ' + h.message;
-      sel.appendChild(opt);
+    d.history.forEach(h=>{
+      const o=document.createElement('option');
+      o.value=h.full_hash; o.textContent=h.hash+'  '+h.date+'  '+h.message;
+      sel.appendChild(o);
     });
-  } catch(e) { container.innerHTML = '<div style="color:red;padding:20px;">履歴取得失敗: ' + e.message + '</div>'; }
+  } catch(e) { c.innerHTML='<div style="color:red;padding:20px;">履歴取得失敗: '+e.message+'</div>'; }
 }
-
 async function previewVer(hash, msg) {
   try {
-    const d = await api('/api/restore?path=' + encodeURIComponent(cur) + '&version=' + hash);
-    document.getElementById('restore-title').textContent = hash.substring(0,7) + ' — ' + msg;
+    const d = await api('/api/restore?path='+encodeURIComponent(cur)+'&version='+hash);
+    document.getElementById('restore-title').textContent = hash.substring(0,7)+' — '+msg;
     document.getElementById('restore-pre').textContent = d.content;
     document.getElementById('restore-do').onclick = () => doRestore(hash);
     dlgRestore.showModal();
-  } catch(e) { toast('プレビュー失敗: ' + e.message, 'err'); }
+  } catch(e) { toast('プレビュー失敗: '+e.message,'err'); }
 }
-
 async function doRestore(hash) {
   try {
-    await api('/api/restore', 'POST', { path: cur, version: hash });
+    await api('/api/restore','POST',{path:cur, version:hash});
     dlgRestore.close();
-    toast('バージョン ' + hash.substring(0,7) + ' に戻しました', 'ok');
+    toast('バージョン '+hash.substring(0,7)+' に戻しました','ok');
     await openFile(cur);
-  } catch(e) { toast('復元失敗: ' + e.message, 'err'); }
+  } catch(e) { toast('復元失敗: '+e.message,'err'); }
 }
 
 // ═══ 差分 ═══
 async function loadDiff() {
-  const v1 = document.getElementById('diff-from').value;
-  const v2 = document.getElementById('diff-to').value;
-  const out = document.getElementById('diff-out');
-  out.innerHTML = '<div class="d-none">読み込み中...</div>';
+  const v1=document.getElementById('diff-from').value;
+  const v2=document.getElementById('diff-to').value;
+  const out=document.getElementById('diff-out');
+  out.innerHTML='<div class="d-none">読み込み中...</div>';
   try {
-    const url = '/api/diff?path=' + encodeURIComponent(cur || '') + '&v1=' + encodeURIComponent(v1) + '&v2=' + (v2 === 'HEAD' ? '' : encodeURIComponent(v2));
-    const d = await api(url);
-    if (!d.diff || d.diff.length === 0) {
-      out.innerHTML = '<div class="d-none">差分がありません</div>';
-      return;
-    }
-    out.innerHTML = d.diff.map(line => {
-      const cls = {add:'d-add',del:'d-del',hunk:'d-hunk',meta:'d-ctx',ctx:'d-ctx'}[line.type] || 'd-ctx';
-      const pfx = {add:'+',del:'-',hunk:'',meta:'',ctx:' '}[line.type] || ' ';
-      return `<span class="${cls}">${pfx}${esc(line.text)}</span>`;
+    const url='/api/diff?path='+encodeURIComponent(cur||'')+'&v1='+encodeURIComponent(v1)+'&v2='+(v2==='HEAD'?'':encodeURIComponent(v2));
+    const d=await api(url);
+    if (!d.diff||d.diff.length===0) { out.innerHTML='<div class="d-none">差分がありません</div>'; return; }
+    out.innerHTML=d.diff.map(l=>{
+      const cls={add:'d-add',del:'d-del',hunk:'d-hunk',meta:'d-ctx',ctx:'d-ctx'}[l.type]||'d-ctx';
+      const pfx={add:'+',del:'-',hunk:'',meta:'',ctx:' '}[l.type]||' ';
+      return `<span class="${cls}">${pfx}${esc(l.text)}</span>`;
     }).join('');
-  } catch(e) { out.innerHTML = '<div class="d-none">差分取得失敗: ' + e.message + '</div>'; }
+  } catch(e) { out.innerHTML='<div class="d-none">差分取得失敗: '+e.message+'</div>'; }
 }
 
 // ═══ 新規ファイル ═══
 async function doNewFile() {
-  const folder = document.getElementById('new-folder').value;
-  const name = document.getElementById('new-name').value.trim();
-  if (!name) { toast('ファイル名を入力してください', 'err'); return; }
+  const folder=document.getElementById('new-folder').value;
+  const name=document.getElementById('new-name').value.trim();
+  if(!name){toast('ファイル名を入力してください','err');return;}
   try {
-    const d = await api('/api/new', 'POST', { folder, name });
+    const d=await api('/api/new','POST',{folder,name});
     dlgNew.close();
-    document.getElementById('new-name').value = '';
+    document.getElementById('new-name').value='';
     await refreshTree();
     await openFile(d.path);
     showTab('edit');
-    toast(name + ' を作成しました', 'ok');
-  } catch(e) { toast(e.message, 'err'); }
+    toast(name+' を作成しました','ok');
+  } catch(e){toast(e.message,'err');}
 }
 
 // ═══ GitHub ═══
 async function refreshGHStatus() {
   try {
-    const d = await api('/api/github/status');
-    const pill = document.getElementById('gh-pill');
-    const txt = document.getElementById('gh-txt');
-    if (d.connected) {
+    const d=await api('/api/github/status');
+    const pill=document.getElementById('gh-pill');
+    const txt=document.getElementById('gh-txt');
+    if(d.connected){
       pill.classList.add('ok');
-      txt.textContent = d.remote.replace(/https:\/\/[^@]+@/,'').replace('https://github.com/','').split(' ')[0];
+      txt.textContent=d.remote.replace(/https:\/\/[^@]+@/,'').replace('https://github.com/','').split(' ')[0];
     } else {
       pill.classList.remove('ok');
-      txt.textContent = 'GitHub 未設定';
+      txt.textContent='GitHub 未設定';
     }
-  } catch(e) {}
+  } catch(e){}
 }
-
-async function saveGH() {
-  const url = document.getElementById('gh-url').value.trim();
-  const tok = document.getElementById('gh-tok').value.trim();
-  const body = { github_url: url };
-  if (tok) body.github_token = tok;
-  try {
-    await api('/api/github/config', 'POST', body);
-    dlgGH.close();
-    await refreshGHStatus();
-    toast('GitHub設定を保存しました', 'ok');
-  } catch(e) { toast('設定保存失敗: ' + e.message, 'err'); }
-}
-
-async function doPush() {
-  toast('GitHubに送信中...', 'info');
-  try {
-    const d = await api('/api/github/push', 'POST', {});
-    toast(d.message || 'Push完了！', 'ok');
-  } catch(e) { toast('Push失敗: ' + e.message, 'err'); }
-}
-
-async function doPull() {
-  toast('GitHubから取得中...', 'info');
-  try {
-    const d = await api('/api/github/pull', 'POST', {});
-    toast('Pull完了: ' + d.message, 'ok');
-    if (cur) await openFile(cur);
-    await refreshTree();
-  } catch(e) { toast('Pull失敗: ' + e.message, 'err'); }
-}
-
-function togglePW() {
-  const inp = document.getElementById('gh-tok');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-}
-
-// GitHub設定モーダルを開くときに現在の設定を読み込む
-document.getElementById('gh-pill').addEventListener('click', async () => {
-  try {
-    const d = await api('/api/github/config');
-    document.getElementById('gh-url').value = d.github_url || '';
-    document.getElementById('gh-tok').value = '';
-    document.getElementById('gh-tok').placeholder = d.has_token ? '（設定済み — 変更する場合のみ入力）' : 'ghp_xxxxxxxxxxxx';
-    document.getElementById('gh-tok-status').textContent = d.has_token ? '✅ トークン設定済み' : '';
-  } catch(e) {}
+document.getElementById('gh-pill').addEventListener('click', async()=>{
+  try{
+    const d=await api('/api/github/config');
+    document.getElementById('gh-url').value=d.github_url||'';
+    document.getElementById('gh-tok').value='';
+    document.getElementById('gh-tok').placeholder=d.has_token?'（設定済み — 変更する場合のみ入力）':'ghp_xxxxxxxxxxxx';
+    document.getElementById('gh-tok-status').textContent=d.has_token?'✅ トークン設定済み':'';
+  }catch(e){}
   dlgGH.showModal();
 });
-
-// ═══ 共通APIラッパー ═══
-async function api(url, method='GET', body=null) {
-  const opts = { method, headers: {} };
-  if (body) {
-    opts.headers['Content-Type'] = 'application/json';
-    opts.body = JSON.stringify(body);
-  }
-  const res = await fetch(url, opts);
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'エラーが発生しました (HTTP ' + res.status + ')');
-  return data;
+async function saveGH(){
+  const url=document.getElementById('gh-url').value.trim();
+  const tok=document.getElementById('gh-tok').value.trim();
+  const body={github_url:url};
+  if(tok) body.github_token=tok;
+  try{
+    await api('/api/github/config','POST',body);
+    dlgGH.close();
+    await refreshGHStatus();
+    toast('GitHub設定を保存しました','ok');
+  }catch(e){toast('設定保存失敗: '+e.message,'err');}
+}
+async function doPush(){
+  toast('GitHubに送信中...','info');
+  try{
+    const d=await api('/api/github/push','POST',{});
+    toast(d.message||'Push完了！','ok');
+  }catch(e){toast('Push失敗: '+e.message,'err');}
+}
+async function doPull(){
+  toast('GitHubから取得中...','info');
+  try{
+    const d=await api('/api/github/pull','POST',{});
+    toast('Pull完了: '+d.message,'ok');
+    if(cur) await openFile(cur);
+    await refreshTree();
+  }catch(e){toast('Pull失敗: '+e.message,'err');}
+}
+function togglePW(){
+  const i=document.getElementById('gh-tok');
+  i.type=i.type==='password'?'text':'password';
 }
 
 // ═══ ユーティリティ ═══
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+async function api(url,method='GET',body=null){
+  const opts={method,headers:{}};
+  if(body){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
+  const res=await fetch(url,opts);
+  const data=await res.json();
+  if(!res.ok) throw new Error(data.error||'エラー (HTTP '+res.status+')');
+  return data;
 }
-
-function toast(msg, type='info') {
-  const box = document.getElementById('toast-box');
-  const el = document.createElement('div');
-  el.className = 'toast ' + type;
-  el.textContent = msg;
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,type='info'){
+  const box=document.getElementById('toast-box');
+  const el=document.createElement('div');
+  el.className='toast '+type; el.textContent=msg;
   box.appendChild(el);
-  setTimeout(() => { el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(),300); }, 3500);
-}
-
-function showErr(msg) {
-  const bar = document.getElementById('err-bar');
-  bar.textContent = '⚠ ' + msg;
-  bar.style.display = 'block';
+  setTimeout(()=>{el.style.transition='opacity .3s';el.style.opacity='0';setTimeout(()=>el.remove(),300);},3500);
 }
 </script>
 </body>
