@@ -7,9 +7,9 @@ import os
 import subprocess
 import webbrowser
 import threading
-import re
+import secrets
 from pathlib import Path
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 
 VAULT = Path(__file__).parent
 CONFIG_FILE = VAULT / '.config.json'
@@ -17,6 +17,26 @@ IGNORE_DIRS = {'.git', '__pycache__', 'templates', 'static', 'node_modules'}
 IGNORE_FILES = {'app.py', 'pm.py', '.gitignore', 'start.bat', 'start.sh'}
 
 app = Flask(__name__)
+# セッション署名用の秘密鍵（環境変数 SECRET_KEY で上書き可能）
+app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+
+# パスワード認証の設定
+# 環境変数 VAULT_PASSWORD が設定されていれば認証を有効化
+# ローカル起動時は認証なし（環境変数未設定）
+VAULT_PASSWORD = os.environ.get('VAULT_PASSWORD', '')
+AUTH_ENABLED = bool(VAULT_PASSWORD)
+
+def login_required(f):
+    """認証が必要なルートに付けるデコレータ"""
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if AUTH_ENABLED and not session.get('logged_in'):
+            if request.path.startswith('/api/'):
+                return jsonify({'error': '認証が必要です'}), 401
+            return redirect('/login')
+        return f(*args, **kwargs)
+    return decorated
 
 # ── ユーティリティ ──────────────────────────────────────────────────
 
@@ -46,6 +66,7 @@ def build_remote_url(url, token):
 # ── API: ファイルツリー ──────────────────────────────────────────────
 
 @app.route('/api/files')
+@login_required
 def api_files():
     tree = []
     for item in sorted(VAULT.iterdir()):
@@ -62,6 +83,7 @@ def api_files():
 # ── API: ファイル内容 ────────────────────────────────────────────────
 
 @app.route('/api/content')
+@login_required
 def api_content():
     path = request.args.get('path', '')
     file_path = VAULT / path
@@ -70,6 +92,7 @@ def api_content():
     return jsonify({'content': file_path.read_text(encoding='utf-8', errors='replace')})
 
 @app.route('/api/content', methods=['POST'])
+@login_required
 def api_save_content():
     data = request.json
     path = data.get('path', '')
@@ -84,6 +107,7 @@ def api_save_content():
 # ── API: 新規ファイル作成 ────────────────────────────────────────────
 
 @app.route('/api/new', methods=['POST'])
+@login_required
 def api_new():
     data = request.json
     folder = data.get('folder', '')
@@ -104,6 +128,7 @@ def api_new():
 # ── API: Gitコミット（保存） ─────────────────────────────────────────
 
 @app.route('/api/commit', methods=['POST'])
+@login_required
 def api_commit():
     data = request.json
     message = data.get('message', '').strip()
@@ -125,6 +150,7 @@ def api_commit():
 # ── API: Git ステータス ──────────────────────────────────────────────
 
 @app.route('/api/status')
+@login_required
 def api_status():
     r = run_git('git status --short')
     changes = []
@@ -136,6 +162,7 @@ def api_status():
 # ── API: 履歴 ───────────────────────────────────────────────────────
 
 @app.route('/api/history')
+@login_required
 def api_history():
     path = request.args.get('path', '')
     if path:
@@ -156,6 +183,7 @@ def api_history():
 # ── API: 差分 ───────────────────────────────────────────────────────
 
 @app.route('/api/diff')
+@login_required
 def api_diff():
     path = request.args.get('path', '')
     v1 = request.args.get('v1', '')
@@ -186,6 +214,7 @@ def api_diff():
 # ── API: 過去バージョン取得 ──────────────────────────────────────────
 
 @app.route('/api/restore')
+@login_required
 def api_restore_preview():
     path = request.args.get('path', '')
     version = request.args.get('version', '')
@@ -195,6 +224,7 @@ def api_restore_preview():
     return jsonify({'content': r.stdout})
 
 @app.route('/api/restore', methods=['POST'])
+@login_required
 def api_restore():
     data = request.json
     path = data.get('path', '')
@@ -209,6 +239,7 @@ def api_restore():
 # ── API: GitHub設定 ──────────────────────────────────────────────────
 
 @app.route('/api/github/config', methods=['GET'])
+@login_required
 def api_github_config_get():
     cfg = load_config()
     # トークンはマスクして返す
@@ -218,6 +249,7 @@ def api_github_config_get():
                     'has_token': bool(token)})
 
 @app.route('/api/github/config', methods=['POST'])
+@login_required
 def api_github_config_post():
     data = request.json
     cfg = load_config()
@@ -241,6 +273,7 @@ def api_github_config_post():
     return jsonify({'ok': True})
 
 @app.route('/api/github/push', methods=['POST'])
+@login_required
 def api_github_push():
     cfg = load_config()
     if not cfg.get('github_url'):
@@ -258,6 +291,7 @@ def api_github_push():
     return jsonify({'ok': True, 'message': f'GitHubに送信しました（{branch}ブランチ）'})
 
 @app.route('/api/github/pull', methods=['POST'])
+@login_required
 def api_github_pull():
     cfg = load_config()
     if not cfg.get('github_url'):
@@ -269,6 +303,7 @@ def api_github_pull():
     return jsonify({'ok': True, 'message': r.stdout.strip() or 'Pull完了'})
 
 @app.route('/api/github/status')
+@login_required
 def api_github_status():
     cfg = load_config()
     connected = bool(cfg.get('github_url'))
@@ -278,9 +313,30 @@ def api_github_status():
         remote_info = r.stdout.strip().split('\n')[0] if r.stdout.strip() else ''
     return jsonify({'connected': connected, 'remote': remote_info})
 
+# ── ログイン ─────────────────────────────────────────────────────────
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if not AUTH_ENABLED:
+        return redirect('/')
+    error = ''
+    if request.method == 'POST':
+        pw = request.form.get('password', '')
+        if pw == VAULT_PASSWORD:
+            session['logged_in'] = True
+            return redirect('/')
+        error = 'パスワードが違います'
+    return render_template('login.html', error=error)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
+
 # ── メインページ ─────────────────────────────────────────────────────
 
 @app.route('/')
+@login_required
 def index():
     return render_template('index.html')
 

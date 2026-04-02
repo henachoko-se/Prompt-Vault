@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: prompt-vault
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: VAULT_PASSWORD
+        sync: false   # Renderのダッシュボードで手動設定
+      - key: SECRET_KEY
+        generateValue: true   # Renderが自動生成
