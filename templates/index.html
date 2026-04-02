@@ -520,10 +520,12 @@ label.lbl:first-child { margin-top:0; }
     <button class="dlg-close" onclick="dlgNew.close()">✕</button>
   </div>
   <div class="dlg-body">
-    <label class="lbl">フォルダ</label>
-    <select class="inp" id="new-folder"></select>
-    <label class="lbl">ファイル名 <span style="font-weight:400;color:#9ca3af;">（.md は自動で付きます）</span></label>
-    <input class="inp" id="new-name" type="text" placeholder="例: step1_script_maker_v2">
+    <label class="lbl">フォルダ（既存から選ぶ）</label>
+    <select class="inp" id="new-folder" onchange="document.getElementById('new-folder-txt').value=''"></select>
+    <label class="lbl" style="margin-top:8px;">または 新しいフォルダ名を入力 <span style="font-weight:400;color:#9ca3af;">（日本語OK）</span></label>
+    <input class="inp" id="new-folder-txt" type="text" placeholder="例: character_goods  または  キャラグッズ" oninput="if(this.value) document.getElementById('new-folder').value=''">
+    <label class="lbl">ファイル名 <span style="font-weight:400;color:#9ca3af;">（.md は自動で付きます・日本語OK）</span></label>
+    <input class="inp" id="new-name" type="text" placeholder="例: step1_v2  または  ステップ1改">
   </div>
   <div class="dlg-foot">
     <button class="btn-sec" onclick="dlgNew.close()">キャンセル</button>
@@ -548,6 +550,14 @@ label.lbl:first-child { margin-top:0; }
 
 <script>
 let cur = null, curTab = 'view', isDirty = false;
+const pathIdMap = new Map(); // path → DOM安全なID（日本語対応）
+
+function pathToId(path) {
+  if (!pathIdMap.has(path)) {
+    pathIdMap.set(path, 'fr_' + pathIdMap.size);
+  }
+  return pathIdMap.get(path);
+}
 
 (async function init() {
   await refreshTree();
@@ -561,8 +571,9 @@ async function refreshTree() {
     const data = await api('/api/files');
     const tree = document.getElementById('tree');
     tree.innerHTML = '';
+    pathIdMap.clear();
     const folderSel = document.getElementById('new-folder');
-    folderSel.innerHTML = '<option value="">ルート</option>';
+    folderSel.innerHTML = '<option value="">ルート（フォルダなし）</option>';
     data.forEach(group => {
       if (group.folder) {
         const lbl = document.createElement('div');
@@ -575,9 +586,10 @@ async function refreshTree() {
       }
       group.files.forEach(f => {
         const path = group.folder ? group.folder + '/' + f : f;
+        const id = pathToId(path); // 日本語対応ID
         const row = document.createElement('div');
         row.className = 'file-row';
-        row.id = 'fr_' + path.replace(/[^a-zA-Z0-9]/g,'_');
+        row.id = id;
         row.innerHTML = '📄 ' + f + '<span class="dot"></span>';
         row.addEventListener('click', () => openFile(path));
         tree.appendChild(row);
@@ -599,7 +611,7 @@ async function openFile(path) {
     document.getElementById('tabs').style.display = 'flex';
     document.getElementById('unsaved').style.display = 'none';
     document.querySelectorAll('.file-row').forEach(r => r.classList.remove('active'));
-    const el = document.getElementById('fr_' + path.replace(/[^a-zA-Z0-9]/g,'_'));
+    const el = document.getElementById(pathToId(path));
     if (el) el.classList.add('active');
     document.getElementById('edit-ta').value = data.content || '';
     if (curTab === 'help') curTab = 'view';
@@ -775,17 +787,21 @@ async function loadDiff() {
 
 // ═══ 新規ファイル ═══
 async function doNewFile() {
-  const folder=document.getElementById('new-folder').value;
-  const name=document.getElementById('new-name').value.trim();
+  // 新規フォルダ入力欄が優先、なければドロップダウン
+  const folderTxt = document.getElementById('new-folder-txt').value.trim();
+  const folder = folderTxt || document.getElementById('new-folder').value;
+  const name = document.getElementById('new-name').value.trim();
   if(!name){toast('ファイル名を入力してください','err');return;}
   try {
     const d=await api('/api/new','POST',{folder,name});
     dlgNew.close();
     document.getElementById('new-name').value='';
+    document.getElementById('new-folder-txt').value='';
     await refreshTree();
     await openFile(d.path);
     showTab('edit');
-    toast(name+' を作成しました','ok');
+    const label = folder ? folder + '/' + name : name;
+    toast(label + ' を作成しました','ok');
   } catch(e){toast(e.message,'err');}
 }
 
