@@ -589,10 +589,20 @@ def api_github_pull():
     if not cfg.get('github_url'):
         return jsonify({'error': 'GitHubの設定がありません'}), 400
 
-    r = run_git('git pull')
+    # 未コミットの変更があるとpullが失敗するので事前チェック
+    r_status = run_git('git status --short')
+    if r_status.stdout.strip():
+        return jsonify({'error': '未コミットの変更があります。先にコミット（保存）してからPullしてください。'}), 400
+
+    # 現在のブランチを取得して明示的にpull
+    r_branch = run_git('git branch --show-current')
+    branch = r_branch.stdout.strip() or 'main'
+
+    r = run_git(f'git pull origin {branch}')
     if r.returncode != 0:
-        return jsonify({'error': r.stderr}), 500
-    return jsonify({'ok': True, 'message': r.stdout.strip() or 'Pull完了'})
+        err = (r.stderr + r.stdout).strip()
+        return jsonify({'error': err}), 500
+    return jsonify({'ok': True, 'message': r.stdout.strip() or f'Pull完了（{branch}ブランチ）'})
 
 @app.route('/api/github/status')
 @login_required
