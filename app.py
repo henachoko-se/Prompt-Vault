@@ -493,13 +493,16 @@ def api_diff():
     v2 = request.args.get('v2', '')
 
     if v1 and v2:
-        cmd = f'git diff {v1} {v2} -- "{path}"'
+        args = ['diff', v1, v2, '--', path]
     elif v1:
-        cmd = f'git diff {v1} HEAD -- "{path}"'
+        args = ['diff', v1, 'HEAD', '--', path]
     else:
-        cmd = f'git diff HEAD -- "{path}"'
+        args = ['diff', 'HEAD', '--', path]
 
-    r = run_git(cmd)
+    r = run_git_args(*args)
+    if r.returncode != 0:
+        return jsonify({'diff': [], 'raw': '', 'error': r.stderr}), 200
+
     lines = []
     for line in r.stdout.split('\n'):
         if line.startswith('+++') or line.startswith('---'):

@@ -1300,29 +1300,42 @@ async function doRestore(hash) {
 
 // ═══ 差分 ═══
 async function loadDiff() {
-  // 比較元ドロップダウンが初期状態（履歴未ロード）なら先に履歴を取得する
   const sel = document.getElementById('diff-from');
-  if (sel.options.length <= 1) await loadHist();
+  const out = document.getElementById('diff-out');
 
-  const v1=document.getElementById('diff-from').value;
-  const v2=document.getElementById('diff-to').value;
-  const out=document.getElementById('diff-out');
-  out.innerHTML='<div class="d-none">読み込み中...</div>';
-  try {
-    const url='/api/diff?path='+encodeURIComponent(cur||'')+'&v1='+encodeURIComponent(v1)+'&v2='+(v2==='HEAD'?'':encodeURIComponent(v2));
-    const d=await api(url);
-    if (!d.diff||d.diff.length===0) {
-      const msg = v1
-        ? '<div class="d-none">この2バージョン間に差分はありません</div>'
-        : '<div class="d-none" style="padding:20px;text-align:center;">未コミットの変更はありません（すべて保存済み）<br><small style="color:#aaa">🕐 履歴タブで過去バージョンを選んで比較できます</small></div>';
-      out.innerHTML = msg; return;
+  // 履歴未ロードなら先に取得してドロップダウンを埋める
+  if (sel.options.length <= 1) {
+    await loadHist();
+    // 「1つ前のコミット」を自動選択（options[0]=未コミット, options[1]=最新, options[2]=1つ前）
+    // options[1]を選ぶとHEADとHEADの比較になるので必ずoptions[2]以降を選ぶ
+    if (sel.options.length > 2) {
+      sel.selectedIndex = 2;  // 1つ前のコミット → HEADとの差分が見える
+    } else if (sel.options.length === 2) {
+      // コミットが1つしかない場合は比較できない
+      out.innerHTML = '<div style="color:#9ca3af;padding:30px;text-align:center;">比較できるバージョンがまだ2つ以上ありません<br><small>「💾 保存」を複数回行うと差分が表示されます</small></div>';
+      return;
+    } else {
+      out.innerHTML = '<div style="color:#9ca3af;padding:30px;text-align:center;">まだ保存履歴がありません<br><small>「💾 保存」ボタンでコミットしてください</small></div>';
+      return;
     }
-    out.innerHTML=d.diff.map(l=>{
+  }
+
+  const v1 = sel.value;
+  const v2 = document.getElementById('diff-to').value;
+  out.innerHTML = '<div class="d-none">読み込み中...</div>';
+  try {
+    const url = '/api/diff?path='+encodeURIComponent(cur||'')+'&v1='+encodeURIComponent(v1)+'&v2='+(v2==='HEAD'?'':encodeURIComponent(v2));
+    const d = await api(url);
+    if (!d.diff || d.diff.length === 0) {
+      out.innerHTML = '<div style="color:#9ca3af;padding:30px;text-align:center;">この2バージョン間に差分はありません<br><small>「比較元」で別のバージョンを選んでください</small></div>';
+      return;
+    }
+    out.innerHTML = d.diff.map(l=>{
       const cls={add:'d-add',del:'d-del',hunk:'d-hunk',meta:'d-ctx',ctx:'d-ctx'}[l.type]||'d-ctx';
       const pfx={add:'+',del:'-',hunk:'',meta:'',ctx:' '}[l.type]||' ';
       return `<span class="${cls}">${pfx}${esc(l.text)}</span>`;
     }).join('');
-  } catch(e) { out.innerHTML='<div class="d-none">差分取得失敗: '+e.message+'</div>'; }
+  } catch(e) { out.innerHTML = '<div style="color:red;padding:20px;">差分取得失敗: '+e.message+'</div>'; }
 }
 
 // ═══ 新規ファイル ═══
