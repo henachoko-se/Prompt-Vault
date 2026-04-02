@@ -173,7 +173,8 @@ def list_images(prompt_path: str) -> list:
     )
 
 def image_url(img_path: Path) -> str:
-    return '/_images/' + str(img_path.relative_to(VAULT)).replace('\\', '/')
+    # IMAGES_DIR からの相対パスを使う（VAULT基準だと _images が二重になるバグを修正）
+    return '/_images/' + str(img_path.relative_to(IMAGES_DIR)).replace('\\', '/')
 
 # ── API: 画像 ────────────────────────────────────────────────────────
 
