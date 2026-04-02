@@ -1307,7 +1307,12 @@ async function loadDiff() {
   try {
     const url='/api/diff?path='+encodeURIComponent(cur||'')+'&v1='+encodeURIComponent(v1)+'&v2='+(v2==='HEAD'?'':encodeURIComponent(v2));
     const d=await api(url);
-    if (!d.diff||d.diff.length===0) { out.innerHTML='<div class="d-none">差分がありません</div>'; return; }
+    if (!d.diff||d.diff.length===0) {
+      const msg = v1
+        ? '<div class="d-none">この2バージョン間に差分はありません</div>'
+        : '<div class="d-none" style="padding:20px;text-align:center;">未コミットの変更はありません（すべて保存済み）<br><small style="color:#aaa">🕐 履歴タブで過去バージョンを選んで比較できます</small></div>';
+      out.innerHTML = msg; return;
+    }
     out.innerHTML=d.diff.map(l=>{
       const cls={add:'d-add',del:'d-del',hunk:'d-hunk',meta:'d-ctx',ctx:'d-ctx'}[l.type]||'d-ctx';
       const pfx={add:'+',del:'-',hunk:'',meta:'',ctx:' '}[l.type]||' ';

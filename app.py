@@ -114,6 +114,9 @@ def init_git_remote():
     else:
         run_git(f'git remote add origin "{remote_url}"')
 
+    # リモートの最新状態をフェッチしてログ・差分が正しく表示されるようにする
+    run_git('git fetch origin')
+
 def build_remote_url(url, token):
     """PAT をURLに埋め込んでHTTPS認証を自動化する"""
     if not token or not url:
@@ -457,16 +460,17 @@ def api_status():
 @login_required
 def api_history():
     path = request.args.get('path', '')
+    # ※ --format の値を "" で囲まないとシェルが | をパイプと解釈してしまうため必ず引用符を付ける
     if path:
-        cmd = f'git log --format=%H|%ad|%s --date=format:"%Y-%m-%d %H:%M" -- "{path}"'
+        cmd = f'git log --format="%H@@%ad@@%s" --date=short -- "{path}"'
     else:
-        cmd = 'git log --format=%H|%ad|%s --date=format:"%Y-%m-%d %H:%M" -30'
+        cmd = 'git log --format="%H@@%ad@@%s" --date=short -50'
 
     r = run_git(cmd)
     entries = []
     for line in r.stdout.strip().split('\n'):
-        if '|' in line:
-            parts = line.split('|', 2)
+        if '@@' in line:
+            parts = line.split('@@', 2)
             if len(parts) == 3:
                 entries.append({'hash': parts[0][:7], 'full_hash': parts[0],
                                 'date': parts[1], 'message': parts[2]})
@@ -595,8 +599,20 @@ def api_github_pull():
         return jsonify({'error': '未コミットの変更があります。先にコミット（保存）してからPullしてください。'}), 400
 
     # 現在のブランチを取得して明示的にpull
-    r_branch = run_git('git branch --show-current')
-    branch = r_branch.stdout.strip() or 'main'
+    # detached HEAD 状態（Renderデプロイ直後等）でも動くよう複数の方法で検出する
+    branch = run_git('git branch --show-current').stdout.strip()
+    if not branch:
+        # symbolic-ref で取得を試みる
+        branch = run_git('git symbolic-ref --short HEAD').stdout.strip()
+    if not branch:
+        # リモートのデフォルトブランチを確認
+        rb = run_git('git remote show origin').stdout
+        for line in rb.splitlines():
+            if 'HEAD branch' in line:
+                branch = line.split(':')[-1].strip()
+                break
+    if not branch:
+        branch = 'master'  # 最終フォールバック
 
     r = run_git(f'git pull origin {branch}')
     if r.returncode != 0:
