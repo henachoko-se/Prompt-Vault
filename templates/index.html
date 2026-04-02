@@ -169,6 +169,41 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 #pane-view strong { color:#1f2937; }
 #pane-view hr { border:none; border-top:1px solid var(--border); margin:16px 0; }
 
+/* ── 画像ギャラリー ── */
+#img-section { border-top:2px solid var(--border); margin-top:28px; padding-top:18px; }
+#img-section-hd { font-size:13px; font-weight:700; color:#374151; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+#img-gallery { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px; min-height:0; }
+.img-card {
+  position:relative; border-radius:8px; overflow:hidden;
+  border:1px solid #e5e7eb; width:140px; height:140px; flex-shrink:0;
+  background:#f9fafb; cursor:zoom-in;
+}
+.img-card img { width:100%; height:100%; object-fit:cover; display:block; }
+.img-del {
+  position:absolute; top:5px; right:5px; width:22px; height:22px;
+  background:rgba(0,0,0,.55); color:#fff; border:none; border-radius:50%;
+  font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  opacity:0; transition:opacity .15s;
+}
+.img-card:hover .img-del { opacity:1; }
+#img-upload-zone {
+  border:2px dashed #d1d5db; border-radius:8px; padding:22px 16px;
+  text-align:center; cursor:pointer; color:#9ca3af; font-size:13px; transition:all .15s;
+}
+#img-upload-zone:hover, #img-upload-zone.drag-over {
+  border-color:var(--accent); color:var(--accent); background:var(--accent2);
+}
+/* サイドバーサムネイル */
+.file-thumb {
+  width:38px; height:38px; object-fit:cover; border-radius:4px;
+  flex-shrink:0; border:1px solid #e5e7eb;
+}
+/* ライトボックス */
+#lightbox {
+  position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:9999;
+  display:none; align-items:center; justify-content:center; cursor:zoom-out;
+}
+#lightbox img { max-width:90vw; max-height:90vh; border-radius:6px; }
 /* ── 編集 ── */
 #edit-ta {
   width:100%; height:calc(100vh - var(--header) - var(--footer) - 52px - 40px - 20px);
@@ -359,7 +394,21 @@ label.lbl:first-child { margin-top:0; }
     </div>
 
     <!-- 表示 -->
-    <div id="pane-view" style="display:none"></div>
+    <div id="pane-view" style="display:none">
+      <div id="pane-view-md"></div>
+      <div id="img-section" style="display:none">
+        <div id="img-section-hd">🖼 添付画像</div>
+        <div id="img-gallery"></div>
+        <div id="img-upload-zone" onclick="document.getElementById('img-file-input').click()">
+          ＋ 画像をドロップ、またはクリックして追加（PNG・JPG・GIF・WebP）
+        </div>
+        <input type="file" id="img-file-input" accept="image/*" multiple style="display:none">
+      </div>
+    </div>
+    <!-- ライトボックス -->
+    <div id="lightbox" onclick="this.style.display='none'">
+      <img id="lightbox-img" src="">
+    </div>
 
     <!-- 編集 -->
     <div id="pane-edit" style="display:none">
@@ -676,6 +725,7 @@ function pathToId(path) {
 
 // ═══ ファイルツリー ═══
 let folderInfoCache = {};
+let imgIndexCache   = {};
 
 function renderTreeNodes(nodes, container, depth) {
   nodes.forEach(node => {
@@ -755,7 +805,12 @@ function renderTreeNodes(nodes, container, depth) {
       row.className = 'file-row';
       row.id = id;
       row.style.paddingLeft = (22 + depth * 14) + 'px';
-      row.innerHTML = '📄 ' + node.name + '<span class="dot"></span>';
+      const thumbUrl = imgIndexCache[node.path];
+      if (thumbUrl) {
+        row.innerHTML = `<img class="file-thumb" src="${thumbUrl}" loading="lazy"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📄 ${node.name}</span><span class="dot"></span>`;
+      } else {
+        row.innerHTML = '📄 ' + node.name + '<span class="dot"></span>';
+      }
       row.addEventListener('click', () => openFile(node.path));
       row.addEventListener('contextmenu', e => showCtxMenu(e, { type: 'file', path: node.path, name: node.name }));
       // ドラッグ（ファイルを別フォルダへ）
@@ -778,11 +833,13 @@ function collectFolderPaths(nodes, depth, result) {
 
 async function refreshTree() {
   try {
-    const [data, info] = await Promise.all([
+    const [data, info, imgIdx] = await Promise.all([
       api('/api/files'),
       api('/api/folder-info'),
+      api('/api/images/index'),
     ]);
     folderInfoCache = info;
+    imgIndexCache   = imgIdx;
     const tree = document.getElementById('tree');
     tree.innerHTML = '';
     pathIdMap.clear();
@@ -832,9 +889,72 @@ function showTab(tab) {
     return;
   }
   document.getElementById('pane-' + tab).style.display = 'block';
-  if (tab === 'view') renderMD(document.getElementById('edit-ta').value);
+  if (tab === 'view') { renderMD(document.getElementById('edit-ta').value); loadImgGallery(); }
   if (tab === 'hist') loadHist();
   if (tab === 'diff') loadDiff();
+}
+
+// ═══ 画像管理 ═══
+async function loadImgGallery() {
+  if (!cur) return;
+  const section  = document.getElementById('img-section');
+  const gallery  = document.getElementById('img-gallery');
+  const { images } = await api('/api/images?path=' + encodeURIComponent(cur));
+  gallery.innerHTML = '';
+  images.forEach(img => {
+    const card = document.createElement('div');
+    card.className = 'img-card';
+    card.innerHTML = `<img src="${img.url}" loading="lazy" alt="${img.name}">
+      <button class="img-del" title="削除">✕</button>`;
+    card.querySelector('img').addEventListener('click', () => openLightbox(img.url));
+    card.querySelector('.img-del').addEventListener('click', async e => {
+      e.stopPropagation();
+      if (!confirm(`「${img.name}」を削除しますか？`)) return;
+      await api('/api/images/delete', 'POST', { path: cur, image: img.name });
+      await loadImgGallery();
+      await refreshTree();
+    });
+    gallery.appendChild(card);
+  });
+  section.style.display = 'block';
+}
+
+async function uploadImgFiles(files) {
+  if (!cur || !files.length) return;
+  const fd = new FormData();
+  fd.append('path', cur);
+  for (const f of files) fd.append('images', f);
+  const res = await fetch('/api/images/upload', { method: 'POST', body: fd });
+  if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'アップロード失敗'); }
+  await loadImgGallery();
+  await refreshTree();
+  toast(files.length + '枚の画像を追加しました', 'ok');
+}
+
+// ファイル選択
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('img-file-input').addEventListener('change', async e => {
+    try { await uploadImgFiles(Array.from(e.target.files)); }
+    catch(err) { toast(err.message, 'err'); }
+    e.target.value = '';
+  });
+  // アップロードゾーン ドラッグ＆ドロップ
+  const zone = document.getElementById('img-upload-zone');
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', async e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if (!files.length) { toast('画像ファイルを選択してください', 'err'); return; }
+    try { await uploadImgFiles(files); }
+    catch(err) { toast(err.message, 'err'); }
+  });
+});
+
+// ライトボックス
+function openLightbox(url) {
+  document.getElementById('lightbox-img').src = url;
+  document.getElementById('lightbox').style.display = 'flex';
 }
 
 // ═══ ドラッグ＆ドロップ ═══
@@ -1050,7 +1170,7 @@ function renderMD(md) {
     })
     .replace(/^> (.+)$/gm,'<blockquote>$1</blockquote>')
     .replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');
-  document.getElementById('pane-view').innerHTML = '<p>' + html + '</p>';
+  document.getElementById('pane-view-md').innerHTML = '<p>' + html + '</p>';
 }
 
 // ═══ 編集 ═══

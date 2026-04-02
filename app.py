@@ -4,17 +4,21 @@ Prompt Vault - プロンプト管理Webアプリ
 """
 import json
 import os
+import re
 import subprocess
 import webbrowser
 import threading
 import secrets
 from pathlib import Path
-from flask import Flask, request, jsonify, render_template, session, redirect, url_for
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file
 
 VAULT = Path(__file__).parent
-CONFIG_FILE = VAULT / '.config.json'
-IGNORE_DIRS = {'.git', '__pycache__', 'templates', 'static', 'node_modules', '.venv', 'venv', '.env'}
+CONFIG_FILE  = VAULT / '.config.json'
+IMAGES_DIR   = VAULT / '_images'
+IGNORE_DIRS  = {'.git', '__pycache__', 'templates', 'static', 'node_modules',
+                '.venv', 'venv', '.env', '_images'}
 IGNORE_FILES = {'app.py', 'pm.py', '.gitignore', 'start.bat', 'start.sh'}
+IMAGE_EXTS   = {'.png', '.jpg', '.jpeg', '.gif', '.webp'}
 
 app = Flask(__name__)
 
@@ -143,6 +147,106 @@ def api_folder_info_post():
     else:
         info.pop(path, None)
     save_folder_info(info)
+    return jsonify({'ok': True})
+
+# ── 画像ユーティリティ ──────────────────────────────────────────────
+
+def get_image_dir(prompt_path: str) -> Path:
+    """プロンプトファイルパスに対応する画像ディレクトリを返す
+    例: 'folder/step1.md' → VAULT/_images/folder/step1/
+    """
+    p = Path(prompt_path.replace('\\', '/'))
+    return IMAGES_DIR / p.parent / p.stem
+
+def list_images(prompt_path: str) -> list:
+    img_dir = get_image_dir(prompt_path)
+    if not img_dir.exists():
+        return []
+    return sorted(
+        [f for f in img_dir.iterdir() if f.is_file() and f.suffix.lower() in IMAGE_EXTS],
+        key=lambda f: f.stat().st_mtime
+    )
+
+def image_url(img_path: Path) -> str:
+    return '/_images/' + str(img_path.relative_to(VAULT)).replace('\\', '/')
+
+# ── API: 画像 ────────────────────────────────────────────────────────
+
+@app.route('/_images/<path:filepath>')
+@login_required
+def serve_image(filepath):
+    img_path = (VAULT / '_images' / filepath).resolve()
+    if not str(img_path).startswith(str(VAULT.resolve())):
+        return '', 403
+    if not img_path.exists():
+        return '', 404
+    return send_file(img_path)
+
+@app.route('/api/images/index')
+@login_required
+def api_images_index():
+    """全プロンプトの1枚目の画像URLを返す {promptPath: url}"""
+    result = {}
+    if not IMAGES_DIR.exists():
+        return jsonify(result)
+    for dirpath in IMAGES_DIR.rglob('*'):
+        if not dirpath.is_dir():
+            continue
+        imgs = sorted(
+            [f for f in dirpath.iterdir() if f.is_file() and f.suffix.lower() in IMAGE_EXTS],
+            key=lambda f: f.stat().st_mtime
+        )
+        if imgs:
+            rel = str(dirpath.relative_to(IMAGES_DIR)).replace('\\', '/')
+            result[rel + '.md'] = image_url(imgs[0])
+    return jsonify(result)
+
+@app.route('/api/images')
+@login_required
+def api_images_list():
+    path = request.args.get('path', '').strip()
+    imgs = list_images(path)
+    return jsonify({'images': [{'name': f.name, 'url': image_url(f)} for f in imgs]})
+
+@app.route('/api/images/upload', methods=['POST'])
+@login_required
+def api_images_upload():
+    path = request.form.get('path', '').strip()
+    if not path:
+        return jsonify({'error': 'パスが必要です'}), 400
+    img_dir = get_image_dir(path)
+    img_dir.mkdir(parents=True, exist_ok=True)
+    saved = []
+    for f in request.files.getlist('images'):
+        if not f.filename:
+            continue
+        ext = Path(f.filename).suffix.lower()
+        if ext not in IMAGE_EXTS:
+            continue
+        safe_name = re.sub(r'[/\\:*?"<>|]', '_', f.filename)
+        dest = img_dir / safe_name
+        if dest.exists():
+            import time
+            dest = img_dir / f'{Path(safe_name).stem}_{int(time.time())}{ext}'
+        f.save(dest)
+        saved.append({'name': dest.name, 'url': image_url(dest)})
+    return jsonify({'ok': True, 'images': saved})
+
+@app.route('/api/images/delete', methods=['POST'])
+@login_required
+def api_images_delete():
+    data = request.json
+    path     = data.get('path', '').strip()
+    img_name = data.get('image', '').strip()
+    img_file = (get_image_dir(path) / img_name).resolve()
+    if not str(img_file).startswith(str(VAULT.resolve())):
+        return jsonify({'error': '不正なパス'}), 400
+    if img_file.exists():
+        img_file.unlink()
+        # ディレクトリが空になったら削除
+        parent = img_file.parent
+        if not any(parent.iterdir()):
+            parent.rmdir()
     return jsonify({'ok': True})
 
 # ── API: ファイルツリー ──────────────────────────────────────────────
