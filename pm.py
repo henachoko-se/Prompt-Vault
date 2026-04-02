@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 pm.py - Prompt Manager
 プロンプトのバージョン管理・取り出しツール
@@ -16,8 +17,12 @@ pm.py - Prompt Manager
 import sys
 import os
 import subprocess
-import glob
 from pathlib import Path
+
+# Windows コンソールを UTF-8 出力に設定
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stdin.reconfigure(encoding='utf-8', errors='replace')
 
 VAULT = Path(__file__).parent
 os.chdir(VAULT)
@@ -55,13 +60,13 @@ def cmd_list():
         if folder.is_dir() and not folder.name.startswith('.') and folder.name != '__pycache__':
             mds = sorted(folder.glob('*.md'))
             if mds:
-                print(f"📁 {folder.name}/")
+                print(f"[{folder.name}/]")
                 for md in mds:
                     size = md.stat().st_size
                     # 最終更新コミット日時を取得
                     r = run(f'git log -1 --format="%ad %s" --date=format:"%Y-%m-%d" -- "{md.relative_to(VAULT)}"')
                     log = r.stdout.strip() or '(未コミット)'
-                    print(f"   📄 {md.name:<40} {log}")
+                    print(f"    - {md.name:<40} {log}")
 
     # コミットされていないファイルも表示
     r = run('git status --short')
@@ -188,7 +193,7 @@ def cmd_search(keyword):
         if keyword.lower() in content.lower():
             lines = content.split('\n')
             hits = [(i+1, l) for i,l in enumerate(lines) if keyword.lower() in l.lower()]
-            print(f"📄 {md.relative_to(VAULT)}")
+            print(f"[{md.relative_to(VAULT)}]")
             for lineno, line in hits[:5]:
                 print(f"   L{lineno}: {line.strip()[:80]}")
             if len(hits) > 5:
