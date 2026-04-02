@@ -253,6 +253,39 @@ def api_delete():
         target.unlink()
     return jsonify({'ok': True})
 
+# ── API: 移動 ────────────────────────────────────────────────────────
+
+@app.route('/api/move', methods=['POST'])
+@login_required
+def api_move():
+    data = request.json
+    src         = data.get('src', '').strip()
+    dest_folder = data.get('dest_folder', '').strip()  # '' = ルート
+
+    src_path = (VAULT / src).resolve()
+    vault_str = str(VAULT.resolve())
+    if not str(src_path).startswith(vault_str) or not src_path.exists():
+        return jsonify({'error': 'ソースが見つかりません'}), 404
+
+    name = src_path.name
+    dest_dir = (VAULT / dest_folder).resolve() if dest_folder else VAULT.resolve()
+    if not str(dest_dir).startswith(vault_str):
+        return jsonify({'error': '不正な移動先'}), 400
+
+    # 自分自身・子孫フォルダへの移動を禁止
+    if str(dest_dir) == str(src_path) or str(dest_dir).startswith(str(src_path) + os.sep):
+        return jsonify({'error': 'フォルダを自分自身の中には移動できません'}), 400
+
+    dest_path = dest_dir / name
+    if dest_path.exists():
+        return jsonify({'error': f'移動先に「{name}」が既に存在します'}), 400
+
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    src_path.rename(dest_path)
+
+    new_rel = str(dest_path.relative_to(VAULT)).replace('\\', '/')
+    return jsonify({'ok': True, 'new_path': new_rel})
+
 # ── API: 新規ファイル作成 ────────────────────────────────────────────
 
 @app.route('/api/new', methods=['POST'])

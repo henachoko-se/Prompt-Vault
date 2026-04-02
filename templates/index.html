@@ -91,6 +91,17 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 .folder-desc-input:focus { border-color:var(--accent); }
 .folder-children { display:none; }
 .folder-children.open { display:block; }
+
+/* ドラッグ＆ドロップ */
+.dragging { opacity:.4; }
+.drop-over { background:#dbeafe !important; border-left-color:#3b82f6 !important; outline:2px dashed #3b82f6; outline-offset:-2px; }
+#drop-root {
+  margin:4px 10px 2px; padding:5px 12px; border:1.5px dashed transparent;
+  border-radius:6px; font-size:11px; color:#9ca3af; text-align:center;
+  transition:all .15s; display:none;
+}
+#drop-root.drop-active { display:block; border-color:#d1d5db; }
+#drop-root.drop-over { background:#dbeafe; border-color:#3b82f6; color:#1d4ed8; }
 .file-row {
   padding:7px 14px 7px 14px; cursor:pointer; color:#374151; display:flex; align-items:center; gap:7px;
   font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
@@ -306,6 +317,7 @@ label.lbl:first-child { margin-top:0; }
     <button id="new-folder-btn" onclick="showMkdirDlg()">📁 フォルダ</button>
   </div>
   <button id="help-side-btn" onclick="showHelp()">❓ 使い方・GitHub接続ガイド</button>
+  <div id="drop-root">📂 ここにドロップ → ルートへ移動</div>
   <div id="tree"></div>
 </div>
 
@@ -730,6 +742,13 @@ function renderTreeNodes(nodes, container, depth) {
       // 右クリックメニュー
       hd.addEventListener('contextmenu', e => showCtxMenu(e, { type: 'folder', path: node.path, name: node.name }));
       if (depth === 0) { hd.classList.add('open'); children.classList.add('open'); }
+      // ドラッグ（フォルダ自体をドラッグ）
+      hd.draggable = true;
+      hd.addEventListener('dragstart', e => onDragStart(e, node.path, 'folder'));
+      // ドロップ受け入れ（フォルダへ移動）
+      hd.addEventListener('dragover',  e => onDragOver(e, hd));
+      hd.addEventListener('dragleave', e => onDragLeave(e, hd));
+      hd.addEventListener('drop',      e => onDrop(e, hd, node.path));
     } else {
       const id = pathToId(node.path);
       const row = document.createElement('div');
@@ -739,6 +758,9 @@ function renderTreeNodes(nodes, container, depth) {
       row.innerHTML = '📄 ' + node.name + '<span class="dot"></span>';
       row.addEventListener('click', () => openFile(node.path));
       row.addEventListener('contextmenu', e => showCtxMenu(e, { type: 'file', path: node.path, name: node.name }));
+      // ドラッグ（ファイルを別フォルダへ）
+      row.draggable = true;
+      row.addEventListener('dragstart', e => onDragStart(e, node.path, 'file'));
       container.appendChild(row);
     }
   });
@@ -814,6 +836,68 @@ function showTab(tab) {
   if (tab === 'hist') loadHist();
   if (tab === 'diff') loadDiff();
 }
+
+// ═══ ドラッグ＆ドロップ ═══
+let dragSrc = null;   // { path, type }
+
+function onDragStart(e, path, type) {
+  dragSrc = { path, type };
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', path);
+  e.currentTarget.classList.add('dragging');
+  // ルートドロップゾーンを表示
+  document.getElementById('drop-root').classList.add('drop-active');
+}
+
+function onDragOver(e, el) {
+  if (!dragSrc) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  el.classList.add('drop-over');
+}
+
+function onDragLeave(e, el) {
+  el.classList.remove('drop-over');
+}
+
+async function onDrop(e, el, destFolder) {
+  e.preventDefault();
+  el.classList.remove('drop-over');
+  if (!dragSrc || dragSrc.path === destFolder) return;
+  await doMove(dragSrc.path, destFolder);
+}
+
+function onDragEnd(e) {
+  dragSrc = null;
+  document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
+  document.getElementById('drop-root').classList.remove('drop-active', 'drop-over');
+}
+
+async function doMove(srcPath, destFolder) {
+  try {
+    const d = await api('/api/move', 'POST', { src: srcPath, dest_folder: destFolder });
+    if (cur === srcPath) cur = d.new_path;
+    await refreshTree();
+    if (cur) await openFile(cur);
+    const dest = destFolder || 'ルート';
+    toast(`「${srcPath.split('/').pop()}」を「${dest}」に移動しました`, 'ok');
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ルートドロップゾーンのイベント
+document.addEventListener('DOMContentLoaded', () => {
+  const dropRoot = document.getElementById('drop-root');
+  dropRoot.addEventListener('dragover',  e => { e.preventDefault(); dropRoot.classList.add('drop-over'); });
+  dropRoot.addEventListener('dragleave', () => dropRoot.classList.remove('drop-over'));
+  dropRoot.addEventListener('drop', async e => {
+    e.preventDefault();
+    dropRoot.classList.remove('drop-over');
+    if (!dragSrc) return;
+    await doMove(dragSrc.path, '');  // '' = ルートへ移動
+  });
+});
+document.addEventListener('dragend', onDragEnd);
 
 // ═══ 右クリックメニュー ═══
 let ctxTarget = null; // { type: 'file'|'folder', path, name }
