@@ -83,20 +83,27 @@ def build_remote_url(url, token):
 
 # ── API: ファイルツリー ──────────────────────────────────────────────
 
+def build_tree(path, rel=''):
+    """ディレクトリを再帰的にスキャンしてツリーを構築する"""
+    items = []
+    try:
+        entries = sorted(path.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
+    except PermissionError:
+        return items
+    for item in entries:
+        item_rel = (rel + '/' + item.name).lstrip('/')
+        if item.is_dir() and item.name not in IGNORE_DIRS:
+            children = build_tree(item, item_rel)
+            if children:
+                items.append({'name': item.name, 'type': 'folder', 'path': item_rel, 'children': children})
+        elif item.is_file() and item.suffix == '.md' and item.name not in IGNORE_FILES:
+            items.append({'name': item.name, 'type': 'file', 'path': item_rel})
+    return items
+
 @app.route('/api/files')
 @login_required
 def api_files():
-    tree = []
-    for item in sorted(VAULT.iterdir()):
-        if item.is_dir() and item.name not in IGNORE_DIRS:
-            files = sorted([
-                f.name for f in item.glob('*.md')
-            ])
-            if files:
-                tree.append({'folder': item.name, 'files': files})
-        elif item.is_file() and item.suffix == '.md' and item.name not in IGNORE_FILES:
-            tree.append({'folder': '', 'files': [item.name]})
-    return jsonify(tree)
+    return jsonify(build_tree(VAULT))
 
 # ── API: ファイル内容 ────────────────────────────────────────────────
 

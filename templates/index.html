@@ -48,9 +48,18 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
   display:flex; align-items:center; gap:6px; text-align:left;
 }
 #help-side-btn:hover { background:#f0f9ff; color:#0969da; border-color:#93c5fd; }
-.folder-lbl { padding:8px 14px 4px; font-size:10px; font-weight:700; color:#9ca3af; letter-spacing:.5px; text-transform:uppercase; }
+.folder-hd {
+  padding:7px 14px; cursor:pointer; color:#374151; display:flex; align-items:center; gap:6px;
+  font-size:13px; font-weight:600; user-select:none;
+  border-left:3px solid transparent;
+}
+.folder-hd:hover { background:#f3f4f6; }
+.folder-hd .arrow { font-size:9px; color:#9ca3af; transition:transform .15s; flex-shrink:0; }
+.folder-hd.open .arrow { transform:rotate(90deg); }
+.folder-children { display:none; }
+.folder-children.open { display:block; }
 .file-row {
-  padding:8px 14px 8px 26px; cursor:pointer; color:#374151; display:flex; align-items:center; gap:7px;
+  padding:7px 14px 7px 14px; cursor:pointer; color:#374151; display:flex; align-items:center; gap:7px;
   font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   border-left:3px solid transparent;
 }
@@ -567,34 +576,64 @@ function pathToId(path) {
 })();
 
 // ═══ ファイルツリー ═══
+function renderTreeNodes(nodes, container, depth) {
+  nodes.forEach(node => {
+    if (node.type === 'folder') {
+      // フォルダヘッダー
+      const hd = document.createElement('div');
+      hd.className = 'folder-hd';
+      hd.style.paddingLeft = (14 + depth * 14) + 'px';
+      hd.innerHTML = '<span class="arrow">▶</span> 📁 ' + node.name;
+      container.appendChild(hd);
+      // 子要素コンテナ
+      const children = document.createElement('div');
+      children.className = 'folder-children';
+      renderTreeNodes(node.children, children, depth + 1);
+      container.appendChild(children);
+      // 折りたたみトグル
+      hd.addEventListener('click', () => {
+        hd.classList.toggle('open');
+        children.classList.toggle('open');
+      });
+      // デフォルトで開く（1階層目のみ）
+      if (depth === 0) { hd.classList.add('open'); children.classList.add('open'); }
+    } else {
+      const id = pathToId(node.path);
+      const row = document.createElement('div');
+      row.className = 'file-row';
+      row.id = id;
+      row.style.paddingLeft = (22 + depth * 14) + 'px';
+      row.innerHTML = '📄 ' + node.name + '<span class="dot"></span>';
+      row.addEventListener('click', () => openFile(node.path));
+      container.appendChild(row);
+    }
+  });
+}
+
+function collectFolderPaths(nodes, depth, result) {
+  nodes.forEach(n => {
+    if (n.type === 'folder') {
+      result.push({ path: n.path, label: '　'.repeat(depth) + '📁 ' + n.path });
+      collectFolderPaths(n.children, depth + 1, result);
+    }
+  });
+  return result;
+}
+
 async function refreshTree() {
   try {
     const data = await api('/api/files');
     const tree = document.getElementById('tree');
     tree.innerHTML = '';
     pathIdMap.clear();
+    renderTreeNodes(data, tree, 0);
+    // 新規作成ダイアログのフォルダ選択肢を更新
     const folderSel = document.getElementById('new-folder');
     folderSel.innerHTML = '<option value="">ルート（フォルダなし）</option>';
-    data.forEach(group => {
-      if (group.folder) {
-        const lbl = document.createElement('div');
-        lbl.className = 'folder-lbl';
-        lbl.textContent = '📁 ' + group.folder;
-        tree.appendChild(lbl);
-        const opt = document.createElement('option');
-        opt.value = group.folder; opt.textContent = group.folder;
-        folderSel.appendChild(opt);
-      }
-      group.files.forEach(f => {
-        const path = group.folder ? group.folder + '/' + f : f;
-        const id = pathToId(path); // 日本語対応ID
-        const row = document.createElement('div');
-        row.className = 'file-row';
-        row.id = id;
-        row.innerHTML = '📄 ' + f + '<span class="dot"></span>';
-        row.addEventListener('click', () => openFile(path));
-        tree.appendChild(row);
-      });
+    collectFolderPaths(data, 0, []).forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.path; opt.textContent = f.label;
+      folderSel.appendChild(opt);
     });
   } catch(e) { toast('ファイル一覧の読み込み失敗: ' + e.message, 'err'); }
 }
