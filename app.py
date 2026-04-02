@@ -49,10 +49,28 @@ def run_git(cmd):
 def load_config():
     if CONFIG_FILE.exists():
         return json.loads(CONFIG_FILE.read_text(encoding='utf-8'))
-    return {'github_url': '', 'github_token': ''}
+    # ファイルがない場合は環境変数から読む（Render.com等のクラウド環境用）
+    return {
+        'github_url':   os.environ.get('GITHUB_URL', ''),
+        'github_token': os.environ.get('GITHUB_TOKEN', ''),
+    }
 
 def save_config(data):
     CONFIG_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+
+def init_git_remote():
+    """起動時に環境変数からGitリモートを自動設定する（クラウド環境用）"""
+    cfg = load_config()
+    url   = cfg.get('github_url', '')
+    token = cfg.get('github_token', '')
+    if not url:
+        return
+    remote_url = build_remote_url(url, token)
+    r = run_git('git remote')
+    if 'origin' in r.stdout:
+        run_git(f'git remote set-url origin "{remote_url}"')
+    else:
+        run_git(f'git remote add origin "{remote_url}"')
 
 def build_remote_url(url, token):
     """PAT をURLに埋め込んでHTTPS認証を自動化する"""
@@ -345,6 +363,8 @@ def index():
 def open_browser():
     import time; time.sleep(1.0)
     webbrowser.open('http://127.0.0.1:5000')
+
+init_git_remote()
 
 if __name__ == '__main__':
     threading.Thread(target=open_browser, daemon=True).start()
