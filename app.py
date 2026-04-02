@@ -641,6 +641,31 @@ def api_github_status():
         remote_info = r.stdout.strip().split('\n')[0] if r.stdout.strip() else ''
     return jsonify({'connected': connected, 'remote': remote_info})
 
+@app.route('/api/debug/git')
+@login_required
+def api_debug_git():
+    """git の状態を診断するデバッグ用エンドポイント"""
+    path = request.args.get('path', '')
+    fmt = '%H@@%ad@@%s'
+    if path:
+        log_r = run_git_args('log', f'--format={fmt}', '--date=short', '--', path)
+        log_all = run_git_args('log', f'--format={fmt}', '--date=short', '-5')
+    else:
+        log_r = run_git_args('log', f'--format={fmt}', '--date=short', '-5')
+        log_all = log_r
+    return jsonify({
+        'vault_path': str(VAULT),
+        'git_dir_exists': (VAULT / '.git').exists(),
+        'log_stdout': log_r.stdout[:2000],
+        'log_stderr': log_r.stderr[:500],
+        'log_all_stdout': log_all.stdout[:2000],
+        'branch': run_git('git branch --show-current').stdout.strip(),
+        'status': run_git('git status --short').stdout[:500],
+        'remote': run_git('git remote -v').stdout[:500],
+        'shallow': run_git_args('rev-parse', '--is-shallow-repository').stdout.strip(),
+        'head': run_git_args('rev-parse', 'HEAD').stdout.strip(),
+    })
+
 # ── ログイン ─────────────────────────────────────────────────────────
 
 @app.route('/login', methods=['GET', 'POST'])
