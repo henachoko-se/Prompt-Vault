@@ -13,7 +13,7 @@ from flask import Flask, request, jsonify, render_template, session, redirect, u
 
 VAULT = Path(__file__).parent
 CONFIG_FILE = VAULT / '.config.json'
-IGNORE_DIRS = {'.git', '__pycache__', 'templates', 'static', 'node_modules'}
+IGNORE_DIRS = {'.git', '__pycache__', 'templates', 'static', 'node_modules', '.venv', 'venv', '.env'}
 IGNORE_FILES = {'app.py', 'pm.py', '.gitignore', 'start.bat', 'start.sh'}
 
 app = Flask(__name__)
@@ -138,18 +138,19 @@ def api_folder_info_post():
 # ── API: ファイルツリー ──────────────────────────────────────────────
 
 def build_tree(path, rel=''):
-    """ディレクトリを再帰的にスキャンしてツリーを構築する"""
+    """ディレクトリを再帰的にスキャンしてツリーを構築する（空フォルダも表示）"""
     items = []
     try:
         entries = sorted(path.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
     except PermissionError:
         return items
     for item in entries:
+        if item.name.startswith('.') and item.name not in {'.gitkeep'}:
+            continue  # 隠しファイル・隠しディレクトリをスキップ
         item_rel = (rel + '/' + item.name).lstrip('/')
         if item.is_dir() and item.name not in IGNORE_DIRS:
             children = build_tree(item, item_rel)
-            if children:
-                items.append({'name': item.name, 'type': 'folder', 'path': item_rel, 'children': children})
+            items.append({'name': item.name, 'type': 'folder', 'path': item_rel, 'children': children})
         elif item.is_file() and item.suffix == '.md' and item.name not in IGNORE_FILES:
             items.append({'name': item.name, 'type': 'file', 'path': item_rel})
     return items
@@ -181,6 +182,65 @@ def api_save_content():
         return jsonify({'error': '不正なパス'}), 400
     file_path.parent.mkdir(parents=True, exist_ok=True)
     file_path.write_text(content, encoding='utf-8')
+    return jsonify({'ok': True})
+
+# ── API: フォルダ作成 ────────────────────────────────────────────────
+
+@app.route('/api/mkdir', methods=['POST'])
+@login_required
+def api_mkdir():
+    data = request.json
+    path = data.get('path', '').strip().strip('/')
+    if not path:
+        return jsonify({'error': 'フォルダ名を入力してください'}), 400
+    folder_path = (VAULT / path).resolve()
+    if not str(folder_path).startswith(str(VAULT.resolve())):
+        return jsonify({'error': '不正なパス'}), 400
+    folder_path.mkdir(parents=True, exist_ok=True)
+    # gitで追跡できるよう .gitkeep を置く
+    gk = folder_path / '.gitkeep'
+    if not gk.exists():
+        gk.write_text('', encoding='utf-8')
+    return jsonify({'ok': True, 'path': path})
+
+# ── API: 名前変更 ─────────────────────────────────────────────────────
+
+@app.route('/api/rename', methods=['POST'])
+@login_required
+def api_rename():
+    import shutil
+    data = request.json
+    old_path = data.get('old_path', '').strip()
+    new_name = data.get('new_name', '').strip()
+    if not old_path or not new_name:
+        return jsonify({'error': 'パスまたは新名称が空です'}), 400
+    old = (VAULT / old_path).resolve()
+    if not str(old).startswith(str(VAULT.resolve())) or not old.exists():
+        return jsonify({'error': 'パスが見つかりません'}), 404
+    new = old.parent / new_name
+    if new.exists():
+        return jsonify({'error': '同名のファイル/フォルダが既に存在します'}), 400
+    old.rename(new)
+    new_rel = str(new.relative_to(VAULT)).replace('\\', '/')
+    return jsonify({'ok': True, 'new_path': new_rel})
+
+# ── API: 削除 ────────────────────────────────────────────────────────
+
+@app.route('/api/delete', methods=['POST'])
+@login_required
+def api_delete():
+    import shutil
+    data = request.json
+    path = data.get('path', '').strip()
+    target = (VAULT / path).resolve()
+    if not str(target).startswith(str(VAULT.resolve())):
+        return jsonify({'error': '不正なパス'}), 400
+    if not target.exists():
+        return jsonify({'error': 'パスが見つかりません'}), 404
+    if target.is_dir():
+        shutil.rmtree(target)
+    else:
+        target.unlink()
     return jsonify({'ok': True})
 
 # ── API: 新規ファイル作成 ────────────────────────────────────────────

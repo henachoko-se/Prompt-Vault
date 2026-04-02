@@ -36,12 +36,29 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
   width:var(--sidebar); background:#fff; border-right:1px solid var(--border);
   overflow-y:auto; display:flex; flex-direction:column;
 }
-#new-btn {
-  margin:10px 10px 4px; padding:7px 12px; border:1.5px dashed #d1d5db; border-radius:7px;
+.side-btns { display:flex; gap:6px; margin:10px 10px 4px; }
+#new-btn, #new-folder-btn {
+  flex:1; padding:7px 8px; border:1.5px dashed #d1d5db; border-radius:7px;
   font-size:12px; color:#6b7280; cursor:pointer; background:none; text-align:left;
-  display:flex; align-items:center; gap:6px;
+  display:flex; align-items:center; gap:5px;
 }
 #new-btn:hover { border-color:var(--accent); color:var(--accent); background:#fff8f5; }
+#new-folder-btn:hover { border-color:#0969da; color:#0969da; background:#f0f9ff; }
+
+/* 右クリックメニュー */
+#ctx-menu {
+  position:fixed; z-index:9999; background:#fff; border:1px solid #e5e7eb;
+  border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,.15); min-width:160px;
+  padding:4px 0; display:none;
+}
+#ctx-menu .ctx-item {
+  padding:8px 16px; font-size:13px; color:#374151; cursor:pointer;
+  display:flex; align-items:center; gap:8px;
+}
+#ctx-menu .ctx-item:hover { background:#f3f4f6; }
+#ctx-menu .ctx-item.danger { color:#dc2626; }
+#ctx-menu .ctx-item.danger:hover { background:#fef2f2; }
+#ctx-menu hr { border:none; border-top:1px solid #f3f4f6; margin:3px 0; }
 #help-side-btn {
   margin:0 10px 8px; padding:6px 12px; border-radius:7px; font-size:12px;
   color:#6b7280; cursor:pointer; background:none; border:1.5px solid #e5e7eb;
@@ -284,9 +301,21 @@ label.lbl:first-child { margin-top:0; }
 
 <!-- サイドバー -->
 <div id="sidebar">
-  <button id="new-btn" onclick="dlgNew.showModal()">＋ 新規プロンプト</button>
+  <div class="side-btns">
+    <button id="new-btn" onclick="dlgNew.showModal()">＋ プロンプト</button>
+    <button id="new-folder-btn" onclick="showMkdirDlg()">📁 フォルダ</button>
+  </div>
   <button id="help-side-btn" onclick="showHelp()">❓ 使い方・GitHub接続ガイド</button>
   <div id="tree"></div>
+</div>
+
+<!-- 右クリックメニュー -->
+<div id="ctx-menu">
+  <div class="ctx-item" id="ctx-mkdir">📁 サブフォルダを作成</div>
+  <div class="ctx-item" id="ctx-newfile">📄 ここにファイルを作成</div>
+  <hr>
+  <div class="ctx-item" id="ctx-rename">✏️ 名前を変更</div>
+  <div class="ctx-item danger" id="ctx-delete">🗑 削除</div>
 </div>
 
 <!-- メイン -->
@@ -521,6 +550,40 @@ label.lbl:first-child { margin-top:0; }
 
 <div id="toast-box"></div>
 
+<!-- ダイアログ: フォルダ作成 -->
+<dialog id="dlgMkdir">
+  <div class="dlg-hdr">
+    <span>📁</span><span class="dlg-title">フォルダ作成</span>
+    <button class="dlg-close" onclick="dlgMkdir.close()">✕</button>
+  </div>
+  <div class="dlg-body">
+    <label class="lbl">親フォルダ（空欄＝ルート）</label>
+    <input class="inp" id="mkdir-parent" type="text" placeholder="例: チームビルディング">
+    <label class="lbl" style="margin-top:8px;">新しいフォルダ名 <span style="font-weight:400;color:#9ca3af;">（日本語OK）</span></label>
+    <input class="inp" id="mkdir-name" type="text" placeholder="例: Vol100">
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn-sub" onclick="dlgMkdir.close()" style="flex:1">キャンセル</button>
+      <button class="btn-ok" onclick="doMkdir()" style="flex:2">作成</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- ダイアログ: 名前変更 -->
+<dialog id="dlgRename">
+  <div class="dlg-hdr">
+    <span>✏️</span><span class="dlg-title">名前を変更</span>
+    <button class="dlg-close" onclick="dlgRename.close()">✕</button>
+  </div>
+  <div class="dlg-body">
+    <label class="lbl">新しい名前</label>
+    <input class="inp" id="rename-input" type="text">
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn-sub" onclick="dlgRename.close()" style="flex:1">キャンセル</button>
+      <button class="btn-ok" onclick="doRename()" style="flex:2">変更</button>
+    </div>
+  </div>
+</dialog>
+
 <!-- ダイアログ: GitHub設定 -->
 <dialog id="dlgGH">
   <div class="dlg-hdr">
@@ -664,6 +727,8 @@ function renderTreeNodes(nodes, container, depth) {
         hd.classList.toggle('open');
         children.classList.toggle('open');
       });
+      // 右クリックメニュー
+      hd.addEventListener('contextmenu', e => showCtxMenu(e, { type: 'folder', path: node.path, name: node.name }));
       if (depth === 0) { hd.classList.add('open'); children.classList.add('open'); }
     } else {
       const id = pathToId(node.path);
@@ -673,6 +738,7 @@ function renderTreeNodes(nodes, container, depth) {
       row.style.paddingLeft = (22 + depth * 14) + 'px';
       row.innerHTML = '📄 ' + node.name + '<span class="dot"></span>';
       row.addEventListener('click', () => openFile(node.path));
+      row.addEventListener('contextmenu', e => showCtxMenu(e, { type: 'file', path: node.path, name: node.name }));
       container.appendChild(row);
     }
   });
@@ -747,6 +813,102 @@ function showTab(tab) {
   if (tab === 'view') renderMD(document.getElementById('edit-ta').value);
   if (tab === 'hist') loadHist();
   if (tab === 'diff') loadDiff();
+}
+
+// ═══ 右クリックメニュー ═══
+let ctxTarget = null; // { type: 'file'|'folder', path, name }
+
+function showCtxMenu(e, target) {
+  e.preventDefault();
+  e.stopPropagation();
+  ctxTarget = target;
+  const menu = document.getElementById('ctx-menu');
+  // フォルダ専用項目の表示切替
+  document.getElementById('ctx-mkdir').style.display   = target.type === 'folder' ? '' : 'none';
+  document.getElementById('ctx-newfile').style.display = target.type === 'folder' ? '' : 'none';
+  menu.style.display = 'block';
+  // 画面端に収まるよう位置調整
+  const mw = 170, mh = 130;
+  const left = Math.min(e.clientX, window.innerWidth  - mw);
+  const top  = Math.min(e.clientY, window.innerHeight - mh);
+  menu.style.left = left + 'px';
+  menu.style.top  = top  + 'px';
+}
+document.addEventListener('click', () => {
+  document.getElementById('ctx-menu').style.display = 'none';
+});
+document.getElementById('ctx-mkdir').addEventListener('click', () => {
+  if (!ctxTarget) return;
+  showMkdirDlg(ctxTarget.path);
+});
+document.getElementById('ctx-newfile').addEventListener('click', () => {
+  if (!ctxTarget) return;
+  document.getElementById('new-folder').value = ctxTarget.path;
+  document.getElementById('new-folder-txt').value = '';
+  dlgNew.showModal();
+  setTimeout(() => document.getElementById('new-name').focus(), 50);
+});
+document.getElementById('ctx-rename').addEventListener('click', () => {
+  if (!ctxTarget) return;
+  const input = document.getElementById('rename-input');
+  input.value = ctxTarget.name;
+  dlgRename.showModal();
+  setTimeout(() => { input.select(); }, 50);
+});
+document.getElementById('ctx-delete').addEventListener('click', async () => {
+  if (!ctxTarget) return;
+  const label = ctxTarget.type === 'folder' ? `フォルダ「${ctxTarget.name}」と中身をすべて削除しますか？` : `「${ctxTarget.name}」を削除しますか？`;
+  if (!confirm(label)) return;
+  try {
+    await api('/api/delete', 'POST', { path: ctxTarget.path });
+    if (cur && cur.startsWith(ctxTarget.path)) {
+      cur = null;
+      document.getElementById('file-bar').style.display = 'none';
+      document.getElementById('tabs').style.display = 'none';
+      document.getElementById('pane-welcome').style.display = 'block';
+    }
+    await refreshTree();
+    toast('削除しました', 'ok');
+  } catch(e) { toast(e.message, 'err'); }
+});
+
+// ═══ フォルダ作成 ═══
+function showMkdirDlg(parentPath = '') {
+  document.getElementById('mkdir-parent').value = parentPath;
+  document.getElementById('mkdir-name').value = '';
+  dlgMkdir.showModal();
+  setTimeout(() => document.getElementById('mkdir-name').focus(), 50);
+}
+async function doMkdir() {
+  const parent = document.getElementById('mkdir-parent').value.trim();
+  const name   = document.getElementById('mkdir-name').value.trim();
+  if (!name) { toast('フォルダ名を入力してください', 'err'); return; }
+  const path = parent ? parent + '/' + name : name;
+  try {
+    await api('/api/mkdir', 'POST', { path });
+    dlgMkdir.close();
+    await refreshTree();
+    toast('フォルダ「' + path + '」を作成しました', 'ok');
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ═══ 名前変更 ═══
+let renameOldPath = null;
+async function doRename() {
+  if (!ctxTarget) return;
+  const newName = document.getElementById('rename-input').value.trim();
+  if (!newName) { toast('名前を入力してください', 'err'); return; }
+  // ファイルの場合は .md を維持
+  let finalName = newName;
+  if (ctxTarget.type === 'file' && !finalName.endsWith('.md')) finalName += '.md';
+  try {
+    const d = await api('/api/rename', 'POST', { old_path: ctxTarget.path, new_name: finalName });
+    dlgRename.close();
+    if (cur === ctxTarget.path) cur = d.new_path;
+    await refreshTree();
+    if (cur) await openFile(cur);
+    toast('名前を変更しました', 'ok');
+  } catch(e) { toast(e.message, 'err'); }
 }
 
 // ═══ Markdownコピー ═══
