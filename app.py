@@ -89,14 +89,19 @@ def save_config(data):
     CONFIG_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
 
 def init_git_remote():
-    """起動時にGitHub設定を自動復元する（クラウド環境用）
-    環境変数 GITHUB_URL / GITHUB_TOKEN が設定されていれば
-    .config.json がなくても自動で接続状態に復元する。
-    """
+    """起動時にGitHub設定とgit userを自動復元する（クラウド環境用）"""
+    # git commit に必要な user 設定（未設定だとコミットエラーになる）
+    r_name  = run_git('git config user.name')
+    r_email = run_git('git config user.email')
+    if not r_name.stdout.strip():
+        run_git('git config user.name "Prompt Vault"')
+    if not r_email.stdout.strip():
+        run_git('git config user.email "vault@prompt-vault.local"')
+
     url   = os.environ.get('GITHUB_URL', '')
     token = os.environ.get('GITHUB_TOKEN', '')
     if not url:
-        return  # 環境変数未設定 = ローカル環境 → 何もしない
+        return  # 環境変数未設定 = ローカル環境
 
     # .config.json が存在しない場合は環境変数から自動生成
     if not CONFIG_FILE.exists():

@@ -957,6 +957,27 @@ function openLightbox(url) {
   document.getElementById('lightbox').style.display = 'flex';
 }
 
+// ═══ クリップボード貼り付け（Ctrl+V で画像をそのまま添付）═══
+document.addEventListener('paste', async e => {
+  if (!cur) return;
+  const items = Array.from(e.clipboardData?.items || []);
+  const imgItems = items.filter(i => i.type.startsWith('image/'));
+  if (!imgItems.length) return; // テキスト貼り付けは通常通り処理
+
+  e.preventDefault();
+  const files = imgItems.map((item, idx) => {
+    const blob = item.getAsFile();
+    const ext  = item.type.split('/')[1]?.replace('jpeg','jpg') || 'png';
+    return new File([blob], `clipboard_${Date.now()}_${idx}.${ext}`, { type: item.type });
+  });
+
+  try {
+    await uploadImgFiles(files);
+    if (curTab !== 'view') showTab('view');
+    toast('クリップボードの画像を添付しました', 'ok');
+  } catch(err) { toast(err.message, 'err'); }
+});
+
 // ═══ ドラッグ＆ドロップ ═══
 let dragSrc = null;   // { path, type }
 
