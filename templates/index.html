@@ -1300,42 +1300,57 @@ async function doRestore(hash) {
 
 // ═══ 差分 ═══
 async function loadDiff() {
-  const sel = document.getElementById('diff-from');
-  const out = document.getElementById('diff-out');
+  const sel  = document.getElementById('diff-from');
+  const out  = document.getElementById('diff-out');
+  out.innerHTML = '<div class="d-none">読み込み中...</div>';
 
-  // 履歴未ロードなら先に取得してドロップダウンを埋める
+  // ① 履歴を常にロード（タブ移動順序に関わらず正しく動くよう毎回取得）
+  await loadHist();
+
+  // ② コミットが2件以上なければ比較不能
   if (sel.options.length <= 1) {
-    await loadHist();
-    // 「1つ前のコミット」を自動選択（options[0]=未コミット, options[1]=最新, options[2]=1つ前）
-    // options[1]を選ぶとHEADとHEADの比較になるので必ずoptions[2]以降を選ぶ
-    if (sel.options.length > 2) {
-      sel.selectedIndex = 2;  // 1つ前のコミット → HEADとの差分が見える
-    } else if (sel.options.length === 2) {
-      // コミットが1つしかない場合は比較できない
-      out.innerHTML = '<div style="color:#9ca3af;padding:30px;text-align:center;">比較できるバージョンがまだ2つ以上ありません<br><small>「💾 保存」を複数回行うと差分が表示されます</small></div>';
-      return;
-    } else {
-      out.innerHTML = '<div style="color:#9ca3af;padding:30px;text-align:center;">まだ保存履歴がありません<br><small>「💾 保存」ボタンでコミットしてください</small></div>';
-      return;
-    }
+    out.innerHTML = '<div style="color:#9ca3af;padding:30px;text-align:center;">まだ保存履歴がありません<br><small>「💾 保存」ボタンでコミットしてください</small></div>';
+    return;
   }
+  if (sel.options.length === 2) {
+    out.innerHTML = '<div style="color:#9ca3af;padding:30px;text-align:center;">比較できるバージョンがまだ2件しかありません<br><small>「💾 保存」を複数回行うと差分が表示されます</small></div>';
+    return;
+  }
+
+  // ③ 「未コミット変更」(value='')のままなら1つ前のコミットを自動選択
+  if (sel.value === '') sel.selectedIndex = 2;
 
   const v1 = sel.value;
   const v2 = document.getElementById('diff-to').value;
-  out.innerHTML = '<div class="d-none">読み込み中...</div>';
+
   try {
-    const url = '/api/diff?path='+encodeURIComponent(cur||'')+'&v1='+encodeURIComponent(v1)+'&v2='+(v2==='HEAD'?'':encodeURIComponent(v2));
+    const url = '/api/diff?path='+encodeURIComponent(cur||'')
+              + '&v1='+encodeURIComponent(v1)
+              + '&v2='+(v2==='HEAD'?'':encodeURIComponent(v2));
     const d = await api(url);
-    if (!d.diff || d.diff.length === 0) {
-      out.innerHTML = '<div style="color:#9ca3af;padding:30px;text-align:center;">この2バージョン間に差分はありません<br><small>「比較元」で別のバージョンを選んでください</small></div>';
+
+    // エラーがあれば表示
+    if (d.error) {
+      out.innerHTML = '<div style="color:red;padding:20px;font-family:monospace;">git エラー:<br>'+esc(d.error)+'</div>';
       return;
     }
-    out.innerHTML = d.diff.map(l=>{
-      const cls={add:'d-add',del:'d-del',hunk:'d-hunk',meta:'d-ctx',ctx:'d-ctx'}[l.type]||'d-ctx';
-      const pfx={add:'+',del:'-',hunk:'',meta:'',ctx:' '}[l.type]||' ';
+
+    if (!d.diff || d.diff.length === 0) {
+      const label = sel.options[sel.selectedIndex]?.textContent || v1.slice(0,7);
+      out.innerHTML = '<div style="color:#9ca3af;padding:30px;text-align:center;">'
+        +'「'+label+'」と現在の内容に差分はありません<br>'
+        +'<small>比較元ドロップダウンで別のバージョンを選んでください</small></div>';
+      return;
+    }
+
+    out.innerHTML = d.diff.map(l => {
+      const cls = {add:'d-add',del:'d-del',hunk:'d-hunk',meta:'d-ctx',ctx:'d-ctx'}[l.type]||'d-ctx';
+      const pfx = {add:'+',del:'-',hunk:'',meta:'',ctx:' '}[l.type]||' ';
       return `<span class="${cls}">${pfx}${esc(l.text)}</span>`;
     }).join('');
-  } catch(e) { out.innerHTML = '<div style="color:red;padding:20px;">差分取得失敗: '+e.message+'</div>'; }
+  } catch(e) {
+    out.innerHTML = '<div style="color:red;padding:20px;">差分取得失敗: '+esc(e.message)+'</div>';
+  }
 }
 
 // ═══ 新規ファイル ═══
