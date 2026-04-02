@@ -17,13 +17,23 @@ IGNORE_DIRS = {'.git', '__pycache__', 'templates', 'static', 'node_modules', '.v
 IGNORE_FILES = {'app.py', 'pm.py', '.gitignore', 'start.bat', 'start.sh'}
 
 app = Flask(__name__)
-# セッション署名用の秘密鍵（環境変数 SECRET_KEY で上書き可能）
-# 未設定の場合は .config.json に保存して再起動後も同じ鍵を使い回す
-def _get_or_create_secret_key():
-    env_key = os.environ.get('SECRET_KEY', '')
-    if env_key:
-        return env_key
-    # ローカル用: .config.json に保存して永続化
+
+def _get_stable_secret_key():
+    """
+    安定したセッション鍵を取得する。優先順位:
+    1. 環境変数 SECRET_KEY（Renderで明示設定した場合）
+    2. VAULT_PASSWORD から派生（Renderで設定済みなら自動的に安定）
+    3. ローカル用: .config.json に保存して再起動後も同じ鍵を維持
+    """
+    import hashlib
+    # 1. 明示的な SECRET_KEY
+    if os.environ.get('SECRET_KEY'):
+        return os.environ['SECRET_KEY']
+    # 2. VAULT_PASSWORD から派生（クラウド環境で自動的に安定する）
+    if os.environ.get('VAULT_PASSWORD'):
+        seed = 'prompt-vault-v1:' + os.environ['VAULT_PASSWORD']
+        return hashlib.sha256(seed.encode()).hexdigest()
+    # 3. ローカル: .config.json に保存して永続化
     cfg_path = VAULT / '.config.json'
     data = json.loads(cfg_path.read_text(encoding='utf-8')) if cfg_path.exists() else {}
     if 'secret_key' not in data:
@@ -31,7 +41,7 @@ def _get_or_create_secret_key():
         cfg_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
     return data['secret_key']
 
-app.secret_key = _get_or_create_secret_key()
+app.secret_key = _get_stable_secret_key()
 
 from datetime import timedelta
 app.permanent_session_lifetime = timedelta(days=30)  # 30日間ログイン維持
