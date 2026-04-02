@@ -1300,6 +1300,10 @@ async function doRestore(hash) {
 
 // ═══ 差分 ═══
 async function loadDiff() {
+  // 比較元ドロップダウンが初期状態（履歴未ロード）なら先に履歴を取得する
+  const sel = document.getElementById('diff-from');
+  if (sel.options.length <= 1) await loadHist();
+
   const v1=document.getElementById('diff-from').value;
   const v2=document.getElementById('diff-to').value;
   const out=document.getElementById('diff-out');

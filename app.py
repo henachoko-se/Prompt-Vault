@@ -76,6 +76,13 @@ def run_git(cmd):
         encoding='utf-8', errors='replace', cwd=str(VAULT)
     )
 
+def run_git_args(*args):
+    """シェルを介さず git を実行（% や | 等の特殊文字が安全に渡せる）"""
+    return subprocess.run(
+        ['git'] + list(args), capture_output=True, text=True,
+        encoding='utf-8', errors='replace', cwd=str(VAULT)
+    )
+
 def load_config():
     if CONFIG_FILE.exists():
         return json.loads(CONFIG_FILE.read_text(encoding='utf-8'))
@@ -460,13 +467,13 @@ def api_status():
 @login_required
 def api_history():
     path = request.args.get('path', '')
-    # ※ --format の値を "" で囲まないとシェルが | をパイプと解釈してしまうため必ず引用符を付ける
+    # run_git_args を使うことでシェルが % や | を解釈しない
+    fmt = '%H@@%ad@@%s'
     if path:
-        cmd = f'git log --format="%H@@%ad@@%s" --date=short -- "{path}"'
+        r = run_git_args('log', f'--format={fmt}', '--date=short', '--', path)
     else:
-        cmd = 'git log --format="%H@@%ad@@%s" --date=short -50'
+        r = run_git_args('log', f'--format={fmt}', '--date=short', '-50')
 
-    r = run_git(cmd)
     entries = []
     for line in r.stdout.strip().split('\n'):
         if '@@' in line:
