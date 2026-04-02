@@ -121,8 +121,13 @@ def init_git_remote():
     else:
         run_git(f'git remote add origin "{remote_url}"')
 
-    # リモートの最新状態をフェッチしてログ・差分が正しく表示されるようにする
-    run_git('git fetch origin')
+    # シャロークローン（Renderのデフォルト）の場合はフル履歴を取得する
+    # これにより履歴タブ・差分タブが正しく機能するようになる
+    is_shallow = run_git_args('rev-parse', '--is-shallow-repository').stdout.strip()
+    if is_shallow == 'true':
+        run_git(f'git fetch --unshallow origin')
+    else:
+        run_git('git fetch origin')
 
 def build_remote_url(url, token):
     """PAT をURLに埋め込んでHTTPS認証を自動化する"""
