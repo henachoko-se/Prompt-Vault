@@ -78,6 +78,13 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 #file-bar .fname { font-weight:600; color:#111; }
 #file-bar .fpath { font-size:11px; color:#9ca3af; }
 #unsaved { font-size:11px; color:var(--accent); display:none; margin-left:4px; }
+#copy-btn {
+  padding:4px 12px; border-radius:16px; border:1px solid #d1d5db; background:#f9fafb;
+  font-size:12px; color:#374151; cursor:pointer; display:flex; align-items:center; gap:5px;
+  white-space:nowrap; transition:all .15s;
+}
+#copy-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent2); }
+#copy-btn.copied { border-color:#16a34a; color:#16a34a; background:#f0fdf4; }
 #tabs { display:none; background:#fff; border-bottom:1px solid var(--border); padding:0 18px; }
 .tab {
   display:inline-flex; align-items:center; gap:4px;
@@ -274,6 +281,7 @@ label.lbl:first-child { margin-top:0; }
     <span class="fpath" id="fpath"></span>
     <span id="unsaved">● 未保存</span>
     <span style="flex:1"></span>
+    <button id="copy-btn" onclick="copyMarkdown()" title="Markdownをそのままコピー（LLMに貼り付け用）">📋 コピー</button>
   </div>
   <div id="tabs">
     <div class="tab active" id="tab-view"  onclick="showTab('view')">👁 表示</div>
@@ -676,6 +684,26 @@ function showTab(tab) {
   if (tab === 'view') renderMD(document.getElementById('edit-ta').value);
   if (tab === 'hist') loadHist();
   if (tab === 'diff') loadDiff();
+}
+
+// ═══ Markdownコピー ═══
+async function copyMarkdown() {
+  const text = document.getElementById('edit-ta').value;
+  if (!text) { toast('コピーするコンテンツがありません', 'err'); return; }
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✅ コピー完了';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 コピー'; btn.classList.remove('copied'); }, 2000);
+  } catch(e) {
+    // フォールバック（httpsでない環境用）
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast('コピーしました', 'ok');
+  }
 }
 
 function showHelp() {
