@@ -422,12 +422,12 @@ label.lbl:first-child { margin-top:0; }
     <div id="pane-diff" style="display:none">
       <div id="diff-ctrl">
         <label>比較元:</label>
-        <select class="sel2" id="diff-from" onchange="loadDiff()">
-          <option value="">未コミット変更</option>
+        <select class="sel2" id="diff-from" onchange="runDiff()">
+          <option value="">-- 選択 --</option>
         </select>
         <label>↔ 比較先:</label>
-        <select class="sel2" id="diff-to" onchange="loadDiff()">
-          <option value="HEAD">現在</option>
+        <select class="sel2" id="diff-to" onchange="runDiff()">
+          <option value="">-- 選択 --</option>
         </select>
       </div>
       <div id="diff-out"></div>
@@ -708,6 +708,7 @@ label.lbl:first-child { margin-top:0; }
 
 <script>
 let cur = null, curTab = 'view', isDirty = false;
+let histLoadedFor = null; // どのファイルの履歴がドロップダウンに入っているか
 const pathIdMap = new Map(); // path → DOM安全なID（日本語対応）
 
 function pathToId(path) {
@@ -1258,8 +1259,12 @@ async function loadHist() {
   c.innerHTML = '<div style="color:#9ca3af;padding:20px;">読み込み中...</div>';
   try {
     const d = await api('/api/history?path='+encodeURIComponent(cur||''));
-    const sel = document.getElementById('diff-from');
-    sel.innerHTML = '<option value="">未コミット変更</option>';
+    const selFrom = document.getElementById('diff-from');
+    const selTo   = document.getElementById('diff-to');
+    selFrom.innerHTML = '<option value="">-- 選択 --</option>';
+    selTo.innerHTML   = '<option value="">-- 選択 --</option>';
+    histLoadedFor = cur;
+
     if (!d.history.length) {
       c.innerHTML = '<div style="color:#9ca3af;padding:40px;text-align:center;">まだ履歴がありません<br>「💾 保存」ボタンでコミットしてください</div>';
       return;
@@ -1273,10 +1278,11 @@ async function loadHist() {
         </div>
         <button class="btn-sm2" onclick="previewVer('${h.full_hash}','${esc(h.message)}')">👁 見る</button>
       </div>`).join('');
+    // 比較元・比較先の両方に同じ選択肢を追加
     d.history.forEach(h=>{
-      const o=document.createElement('option');
-      o.value=h.full_hash; o.textContent=h.hash+'  '+h.date+'  '+h.message;
-      sel.appendChild(o);
+      const label = h.hash+'  '+h.date+'  '+h.message;
+      const oF = document.createElement('option'); oF.value = h.full_hash; oF.textContent = label; selFrom.appendChild(oF);
+      const oT = document.createElement('option'); oT.value = h.full_hash; oT.textContent = label; selTo.appendChild(oT);
     });
   } catch(e) { c.innerHTML='<div style="color:red;padding:20px;">履歴取得失敗: '+e.message+'</div>'; }
 }
@@ -1299,51 +1305,73 @@ async function doRestore(hash) {
 }
 
 // ═══ 差分 ═══
+// 差分タブを開いたとき：履歴をロードして自動選択してから差分表示
 async function loadDiff() {
-  const sel  = document.getElementById('diff-from');
-  const out  = document.getElementById('diff-out');
-  out.innerHTML = '<div class="d-none">読み込み中...</div>';
+  const out = document.getElementById('diff-out');
+  out.innerHTML = '<div style="color:#9ca3af;padding:10px;">読み込み中...</div>';
 
-  // ① 履歴を常にロード（タブ移動順序に関わらず正しく動くよう毎回取得）
-  await loadHist();
+  // ファイルが変わった or 未ロードなら履歴を取得してドロップダウンを埋める
+  if (histLoadedFor !== cur) await loadHist();
 
-  // ② コミットが2件以上なければ比較不能
-  if (sel.options.length <= 1) {
+  const selFrom = document.getElementById('diff-from');
+  const selTo   = document.getElementById('diff-to');
+
+  // コミットが2件未満なら比較不能
+  if (selFrom.options.length <= 1) {
     out.innerHTML = '<div style="color:#9ca3af;padding:30px;text-align:center;">まだ保存履歴がありません<br><small>「💾 保存」ボタンでコミットしてください</small></div>';
     return;
   }
-  if (sel.options.length === 2) {
-    out.innerHTML = '<div style="color:#9ca3af;padding:30px;text-align:center;">比較できるバージョンがまだ2件しかありません<br><small>「💾 保存」を複数回行うと差分が表示されます</small></div>';
+  if (selFrom.options.length <= 2) {
+    out.innerHTML = '<div style="color:#9ca3af;padding:30px;text-align:center;">比較できるバージョンがまだ1件しかありません<br><small>「💾 保存」を複数回行うと差分が表示されます</small></div>';
     return;
   }
 
-  // ③ 「未コミット変更」(value='')のままなら1つ前のコミットを自動選択
-  if (sel.value === '') sel.selectedIndex = 2;
+  // 自動選択：比較元=1つ前の修正(options[2])、比較先=最新の修正(options[1])
+  if (!selFrom.value) selFrom.selectedIndex = 2; // 1つ前の修正
+  if (!selTo.value)   selTo.selectedIndex   = 1; // 最新の修正
 
-  const v1 = sel.value;
-  const v2 = document.getElementById('diff-to').value;
+  await runDiff();
+}
 
+// ドロップダウン変更時 or 差分実行時に呼ぶ（履歴リセットはしない）
+async function runDiff() {
+  const selFrom = document.getElementById('diff-from');
+  const selTo   = document.getElementById('diff-to');
+  const out     = document.getElementById('diff-out');
+
+  const v1 = selFrom.value;
+  const v2 = selTo.value;
+
+  if (!v1 || !v2) {
+    out.innerHTML = '<div style="color:#9ca3af;padding:20px;">比較元と比較先を両方選択してください</div>';
+    return;
+  }
+  if (v1 === v2) {
+    out.innerHTML = '<div style="color:#9ca3af;padding:20px;">比較元と比較先が同じです。異なるバージョンを選んでください</div>';
+    return;
+  }
+
+  out.innerHTML = '<div style="color:#9ca3af;padding:10px;">差分を取得中...</div>';
   try {
     const url = '/api/diff?path='+encodeURIComponent(cur||'')
               + '&v1='+encodeURIComponent(v1)
-              + '&v2='+(v2==='HEAD'?'':encodeURIComponent(v2));
+              + '&v2='+encodeURIComponent(v2);
     const d = await api(url);
 
-    // エラーがあれば表示
     if (d.error) {
-      out.innerHTML = '<div style="color:red;padding:20px;font-family:monospace;">git エラー:<br>'+esc(d.error)+'</div>';
+      out.innerHTML = '<div style="color:red;padding:20px;font-family:monospace;">gitエラー:<br>'+esc(d.error)+'</div>';
       return;
     }
-
     if (!d.diff || d.diff.length === 0) {
-      const label = sel.options[sel.selectedIndex]?.textContent || v1.slice(0,7);
-      out.innerHTML = '<div style="color:#9ca3af;padding:30px;text-align:center;">'
-        +'「'+label+'」と現在の内容に差分はありません<br>'
-        +'<small>比較元ドロップダウンで別のバージョンを選んでください</small></div>';
+      out.innerHTML = '<div style="color:#9ca3af;padding:30px;text-align:center;">この2バージョン間に差分はありません</div>';
       return;
     }
 
-    out.innerHTML = d.diff.map(l => {
+    const fromLabel = selFrom.options[selFrom.selectedIndex]?.textContent || v1.slice(0,7);
+    const toLabel   = selTo.options[selTo.selectedIndex]?.textContent     || v2.slice(0,7);
+    const header = `<div style="font-size:11px;color:#6b7280;padding:4px 10px;background:#f9fafb;border-bottom:1px solid #e5e7eb;">📌 ${esc(fromLabel)} → ${esc(toLabel)}</div>`;
+
+    out.innerHTML = header + d.diff.map(l=>{
       const cls = {add:'d-add',del:'d-del',hunk:'d-hunk',meta:'d-ctx',ctx:'d-ctx'}[l.type]||'d-ctx';
       const pfx = {add:'+',del:'-',hunk:'',meta:'',ctx:' '}[l.type]||' ';
       return `<span class="${cls}">${pfx}${esc(l.text)}</span>`;
