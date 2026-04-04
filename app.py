@@ -276,7 +276,10 @@ def build_tree(path, rel=''):
     """ディレクトリを再帰的にスキャンしてツリーを構築する（空フォルダも表示）"""
     items = []
     try:
-        entries = sorted(path.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
+        def _nat_key(p):
+            parts = re.split(r'(\d+)', p.name.lower())
+            return (p.is_file(), [int(c) if c.isdigit() else c for c in parts])
+        entries = sorted(path.iterdir(), key=_nat_key)
     except PermissionError:
         return items
     for item in entries:
