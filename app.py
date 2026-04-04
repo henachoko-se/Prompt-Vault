@@ -442,15 +442,44 @@ def api_new():
 def api_commit():
     data = request.json
     message = data.get('message', '').strip()
-    if not message:
-        return jsonify({'error': 'コメントを入力してください'}), 400
 
     r_status = run_git('git status --short')
     if not r_status.stdout.strip():
         return jsonify({'error': '変更がありません'}), 400
 
     run_git('git add -A')
-    r = run_git(f'git commit -m "{message}"')
+
+    # メッセージが空なら差分情報から自動生成
+    if not message:
+        numstat = run_git('git diff --cached --numstat').stdout.strip()
+        status  = run_git('git diff --cached --name-status').stdout.strip()
+        if numstat:
+            files = []
+            total_add = total_del = 0
+            for line in numstat.splitlines():
+                parts = line.split('\t')
+                if len(parts) == 3:
+                    a = int(parts[0]) if parts[0].isdigit() else 0
+                    d = int(parts[1]) if parts[1].isdigit() else 0
+                    total_add += a; total_del += d
+                    files.append((parts[2], a, d))
+            # ステータス（A=追加, D=削除, M=変更）を取得
+            file_status = {}
+            for line in status.splitlines():
+                parts = line.split('\t')
+                if len(parts) >= 2:
+                    file_status[parts[1]] = parts[0]
+            if len(files) == 1:
+                fname = os.path.basename(files[0][0])
+                st = file_status.get(files[0][0], 'M')
+                action = {'A': '追加', 'D': '削除'}.get(st, '更新')
+                message = f'{fname} を{action}（+{files[0][1]} -{files[0][2]}）'
+            else:
+                message = f'{len(files)}ファイルを更新（+{total_add} -{total_del}）'
+        else:
+            message = '変更を保存'
+
+    r = run_git_args('commit', '-m', message)
     if r.returncode != 0:
         return jsonify({'error': r.stderr}), 500
 
