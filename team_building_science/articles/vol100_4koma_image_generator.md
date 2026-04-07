@@ -203,8 +203,8 @@ AIの挙動を細かく制御する長文のシステムプロンプトそのも
 
 設定が面倒な方、まず動かしてみたい方向けに、私のGemを公開しています。リンクをクリックするだけで、今すぐGeminiに追加できます。
 
-【Step1：台本生成用】（※リンクをここに挿入）
-【Step2：画像生成用】（※リンクをここに挿入）
+【Step1：台本生成用】[漫画台本メーカー](https://gemini.google.com/gem/1m-9yWFRqDEA2VmQj-kZUkBKoJB2y8-RI?usp=sharing)
+【Step2：画像生成用】[漫画画像生成](https://gemini.google.com/gem/1h5QAm14QrQR0lwcWMJ8qDc5FQZFuViri?usp=sharing)
 
 **B：【推奨】自分専用にカスタマイズして作る**
 
@@ -411,8 +411,8 @@ DEFAULT_BINDING = 右綴じ       # 右綴じ（縦書き）/ 左綴じ（横書
 
 リンクをクリックするだけで、今すぐGeminiに追加できます。
 
-【台本生成用】4コマ台本メーカー（※リンクをここに挿入）
-【画像生成用】4コマ漫画出力（※リンクをここに挿入）
+【台本生成用】[4コマ台本メーカー](https://gemini.google.com/gem/1m-9yWFRqDEA2VmQj-kZUkBKoJB2y8-RI?usp=sharing)
+【画像生成用】[4コマ漫画出力](https://gemini.google.com/gem/1h5QAm14QrQR0lwcWMJ8qDc5FQZFuViri?usp=sharing)
 
 **B：【推奨】自分専用にカスタマイズして作る**
 
