@@ -34,7 +34,22 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 #sidebar {
   position:fixed; top:var(--header); left:0; bottom:var(--footer);
   width:var(--sidebar); background:#fff; border-right:1px solid var(--border);
-  overflow-y:auto; display:flex; flex-direction:column;
+  overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column;
+}
+#sidebar-resizer {
+  position:fixed; top:var(--header); bottom:var(--footer);
+  left:var(--sidebar); width:5px; cursor:col-resize; z-index:190;
+  background:transparent; transition:background .15s;
+}
+#sidebar-resizer:hover, #sidebar-resizer.dragging { background:var(--accent); opacity:.5; }
+.side-sort {
+  display:flex; align-items:center; gap:5px; margin:0 10px 6px; padding:4px 8px;
+  background:#f9fafb; border-radius:6px; border:1px solid var(--border);
+}
+.side-sort label { font-size:11px; color:#9ca3af; flex-shrink:0; }
+.side-sort select {
+  flex:1; font-size:11px; border:none; background:transparent; color:#374151;
+  cursor:pointer; outline:none; padding:0;
 }
 .side-btns { display:flex; gap:6px; margin:10px 10px 4px; }
 #new-btn, #new-folder-btn {
@@ -412,10 +427,20 @@ label.lbl:first-child { margin-top:0; }
     <button id="new-btn" onclick="dlgNew.showModal()">＋ プロンプト</button>
     <button id="new-folder-btn" onclick="showMkdirDlg()">📁 フォルダ</button>
   </div>
+  <div class="side-sort">
+    <label>並び順:</label>
+    <select id="sort-sel" onchange="onSortChange()">
+      <option value="name_asc">名前 昇順 ↑</option>
+      <option value="name_desc">名前 降順 ↓</option>
+      <option value="mtime">更新日時 新しい順</option>
+    </select>
+  </div>
   <button id="help-side-btn" onclick="showHelp()">❓ 使い方・GitHub接続ガイド</button>
   <div id="drop-root">📂 ここにドロップ → ルートへ移動</div>
   <div id="tree"></div>
 </div>
+<!-- サイドバーリサイザー -->
+<div id="sidebar-resizer"></div>
 
 <!-- 右クリックメニュー -->
 <div id="ctx-menu">
@@ -890,10 +915,17 @@ function collectFolderPaths(nodes, depth, result) {
   return result;
 }
 
+function onSortChange() {
+  const v = document.getElementById('sort-sel').value;
+  localStorage.setItem('pv_sort', v);
+  refreshTree();
+}
+
 async function refreshTree() {
+  const sort = document.getElementById('sort-sel')?.value || localStorage.getItem('pv_sort') || 'name_asc';
   try {
     const [data, info, imgIdx] = await Promise.all([
-      api('/api/files'),
+      api('/api/files?sort=' + encodeURIComponent(sort)),
       api('/api/folder-info'),
       api('/api/images/index'),
     ]);
@@ -1571,6 +1603,52 @@ function toast(msg,type='info'){
   box.appendChild(el);
   setTimeout(()=>{el.style.transition='opacity .3s';el.style.opacity='0';setTimeout(()=>el.remove(),300);},3500);
 }
+
+// ── サイドバーリサイズ ──
+(function(){
+  const MIN_W = 160, MAX_W = 600;
+  const resizer = document.getElementById('sidebar-resizer');
+  const sidebar = document.getElementById('sidebar');
+
+  // 保存済み幅を復元
+  const saved = parseInt(localStorage.getItem('pv_sidebar_w'), 10);
+  if (saved && saved >= MIN_W && saved <= MAX_W) {
+    document.documentElement.style.setProperty('--sidebar', saved + 'px');
+    sidebar.style.width = saved + 'px';
+    resizer.style.left  = saved + 'px';
+  }
+
+  let startX, startW;
+  resizer.addEventListener('mousedown', e => {
+    startX = e.clientX;
+    startW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar'), 10);
+    resizer.classList.add('dragging');
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!resizer.classList.contains('dragging')) return;
+    const w = Math.min(MAX_W, Math.max(MIN_W, startW + e.clientX - startX));
+    document.documentElement.style.setProperty('--sidebar', w + 'px');
+    sidebar.style.width = w + 'px';
+    resizer.style.left  = w + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!resizer.classList.contains('dragging')) return;
+    resizer.classList.remove('dragging');
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+    const w = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar'), 10);
+    localStorage.setItem('pv_sidebar_w', w);
+  });
+})();
+
+// ── ソート選択の初期化 ──
+(function(){
+  const saved = localStorage.getItem('pv_sort') || 'name_asc';
+  const sel = document.getElementById('sort-sel');
+  if (sel) sel.value = saved;
+})();
 
 // ── モバイルサイドバートグル ──
 function toggleSidebar() {

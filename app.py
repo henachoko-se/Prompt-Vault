@@ -272,14 +272,27 @@ def api_images_delete():
 
 # ── API: ファイルツリー ──────────────────────────────────────────────
 
-def build_tree(path, rel=''):
+def build_tree(path, rel='', sort='name_asc'):
     """ディレクトリを再帰的にスキャンしてツリーを構築する（空フォルダも表示）"""
     items = []
     try:
         def _nat_key(p):
             parts = re.split(r'(\d+)', p.name.lower())
             return (p.is_file(), [int(c) if c.isdigit() else c for c in parts])
-        entries = sorted(path.iterdir(), key=_nat_key)
+        def _nat_key_desc(p):
+            parts = re.split(r'(\d+)', p.name.lower())
+            return (p.is_file(), [-int(c) if c.isdigit() else c for c in parts])
+        def _mtime_key(p):
+            try: mtime = p.stat().st_mtime
+            except: mtime = 0
+            return (p.is_file(), -mtime)  # 新しい順（フォルダ優先は維持）
+
+        if sort == 'name_desc':
+            entries = sorted(path.iterdir(), key=_nat_key_desc)
+        elif sort == 'mtime':
+            entries = sorted(path.iterdir(), key=_mtime_key)
+        else:
+            entries = sorted(path.iterdir(), key=_nat_key)
     except PermissionError:
         return items
     for item in entries:
@@ -287,16 +300,20 @@ def build_tree(path, rel=''):
             continue  # 隠しファイル・隠しディレクトリをスキップ
         item_rel = (rel + '/' + item.name).lstrip('/')
         if item.is_dir() and item.name not in IGNORE_DIRS:
-            children = build_tree(item, item_rel)
-            items.append({'name': item.name, 'type': 'folder', 'path': item_rel, 'children': children})
+            children = build_tree(item, item_rel, sort)
+            mtime = item.stat().st_mtime if item.exists() else 0
+            items.append({'name': item.name, 'type': 'folder', 'path': item_rel, 'children': children, 'mtime': mtime})
         elif item.is_file() and item.suffix == '.md' and item.name not in IGNORE_FILES:
-            items.append({'name': item.name, 'type': 'file', 'path': item_rel})
+            try: mtime = item.stat().st_mtime
+            except: mtime = 0
+            items.append({'name': item.name, 'type': 'file', 'path': item_rel, 'mtime': mtime})
     return items
 
 @app.route('/api/files')
 @login_required
 def api_files():
-    return jsonify(build_tree(VAULT))
+    sort = request.args.get('sort', 'name_asc')
+    return jsonify(build_tree(VAULT, sort=sort))
 
 # ── API: ファイル内容 ────────────────────────────────────────────────
 
@@ -506,10 +523,11 @@ def api_history():
     path = request.args.get('path', '')
     # run_git_args を使うことでシェルが % や | を解釈しない
     fmt = '%H@@%ad@@%s'
+    date_fmt = '--date=format:%Y-%m-%d %H:%M:%S'
     if path:
-        r = run_git_args('log', f'--format={fmt}', '--date=short', '--', path)
+        r = run_git_args('log', f'--format={fmt}', date_fmt, '--', path)
     else:
-        r = run_git_args('log', f'--format={fmt}', '--date=short', '-50')
+        r = run_git_args('log', f'--format={fmt}', date_fmt, '-50')
 
     entries = []
     for line in r.stdout.strip().split('\n'):
