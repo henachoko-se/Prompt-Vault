@@ -1256,12 +1256,8 @@ async function doRename() {
 // ═══ コードブロックコピー ═══
 function copyCodeBlock(btn) {
   const code = btn.nextElementSibling.querySelector('code');
-  // renderMD が \n→<br> 変換するため innerHTML から復元する
-  const text = code.innerHTML
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&');
+  // data-raw にマークダウン処理前の生テキストを保存済み
+  const text = decodeURIComponent(code.dataset.raw || '');
   navigator.clipboard.writeText(text).then(() => {
     btn.textContent = '✅ コピー完了';
     btn.classList.add('copied');
@@ -1305,9 +1301,17 @@ function showHelp() {
 
 // ═══ Markdown描画 ═══
 function renderMD(md) {
+  // コードブロックを先に抜き出してプレースホルダーに置き換える（マークダウン変換から保護）
+  const rawBlocks = [];
+  const placeholder = (i) => `\x00CB${i}\x00`;
+  md = md.replace(/````(\w*)\n([\s\S]*?)````|```(\w*)\n([\s\S]*?)```/g, (_, l4, c4, l3, c3) => {
+    const raw = (c4 !== undefined ? c4 : c3).trimEnd();
+    const i = rawBlocks.push(raw) - 1;
+    return placeholder(i);
+  });
+
   let html = md
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/```(\w*)\n([\s\S]*?)```/g, (_,l,c) => `<div class="code-wrap"><button class="code-copy-btn" onclick="copyCodeBlock(this)">📋 コピー</button><pre><code>${c.trimEnd()}</code></pre></div>`)
     .replace(/`([^`\n]+)`/g, '<code>$1</code>')
     .replace(/^### (.+)$/gm,'<h3>$1</h3>')
     .replace(/^## (.+)$/gm,'<h2>$1</h2>')
@@ -1329,6 +1333,14 @@ function renderMD(md) {
     })
     .replace(/^> (.+)$/gm,'<blockquote>$1</blockquote>')
     .replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');
+
+  // プレースホルダーをコードブロックHTMLに復元（data-rawに生テキストを保存）
+  html = html.replace(/\x00CB(\d+)\x00/g, (_, i) => {
+    const raw = rawBlocks[i];
+    const escaped = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<div class="code-wrap"><button class="code-copy-btn" onclick="copyCodeBlock(this)">📋 コピー</button><pre><code data-raw="${encodeURIComponent(raw)}">${escaped}</code></pre></div>`;
+  });
+
   document.getElementById('pane-view-md').innerHTML = '<p>' + html + '</p>';
 }
 
