@@ -393,17 +393,23 @@ AIが台本（ネーム）を提案してきます。内容を確認してくだ
 プロンプトの冒頭にある以下の設定を書き換えると、毎回の設定入力を省略できます。
 
 ```
-DEFAULT_MODE    = ①           # ①短文妄想型 / ②元ネタ忠実型 / ③元ネタ要約型
-DEFAULT_PAGES   = おまかせ     # 数字（例：2）またはおまかせ
-DEFAULT_STYLE   = キャラクター画風踏襲型
-DEFAULT_PURPOSE = おまかせ
-DEFAULT_BINDING = 右綴じ       # 右綴じ（縦書き）/ 左綴じ（横書き）
+DEFAULT_MODE          = ①           # ①短文妄想型 / ②元ネタ忠実型 / ③元ネタ要約型
+DEFAULT_PAGES         = おまかせ     # 数字（例：2）またはおまかせ
+DEFAULT_STYLE         = キャラクター画風踏襲型
+DEFAULT_PURPOSE       = おまかせ
+DEFAULT_BINDING       = 右綴じ       # 右綴じ（縦書き）/ 左綴じ（横書き）
+DEFAULT_SERIF_MODE    = オン          # オン（セリフあり）/ オフ（吹き出しを空白にする）
+DEFAULT_LAYOUT_MODE   = オフ         # オン（コマ配置を詳細指示）/ オフ（AIに任せる）
+DEFAULT_SPECIAL_PANEL = オン         # オン（変形コマ・飛び出し両方あり）/ 変形コマオフ / 飛び出しオフ / 両方オフ
 ```
 
 **カスタマイズ例：**
 - Threadsで毎回同じキャラクターで投稿したい → `DEFAULT_BINDING = 左綴じ`
 - 日記を忠実に漫画化したい → `DEFAULT_MODE = ②`
 - 毎回2ページにまとめたい → `DEFAULT_PAGES = 2`
+- 日本語テキストが出力されない場合 → `DEFAULT_SERIF_MODE = オフ`（空の吹き出しで出力、後から手動でテキストを入れる）
+- コマ配置もAIに細かく指示したい → `DEFAULT_LAYOUT_MODE = オン`
+- 変形コマを使わず安定出力したい → `DEFAULT_SPECIAL_PANEL = 変形コマオフ`
 
 ---
 
