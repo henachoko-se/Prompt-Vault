@@ -742,6 +742,13 @@ def logout():
     session.clear()
     return redirect('/login')
 
+# ── Ping（スリープ防止用）────────────────────────────────────────────
+
+@app.route('/ping')
+def ping():
+    return 'ok', 200
+
+
 # ── メインページ ─────────────────────────────────────────────────────
 
 @app.route('/')
