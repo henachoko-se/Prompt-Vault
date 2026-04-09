@@ -401,6 +401,9 @@ DEFAULT_BINDING       = 右綴じ       # 右綴じ（縦書き）/ 左綴じ（
 DEFAULT_SERIF_MODE    = オン          # オン（セリフあり）/ オフ（吹き出しを空白にする）
 DEFAULT_LAYOUT_MODE   = オフ         # オン（コマ配置を詳細指示）/ オフ（AIに任せる）
 DEFAULT_SPECIAL_PANEL = オン         # オン（変形コマ・飛び出し両方あり）/ 変形コマオフ / 飛び出しオフ / 両方オフ
+DEFAULT_PANELS        = 4            # 1ページの基本コマ数
+DEFAULT_PANELS_MIN    = 3            # 1ページの最小コマ数
+DEFAULT_PANELS_MAX    = 5            # 1ページの最大コマ数
 ```
 
 **カスタマイズ例：**
@@ -410,6 +413,7 @@ DEFAULT_SPECIAL_PANEL = オン         # オン（変形コマ・飛び出し両
 - 日本語テキストが出力されない場合 → `DEFAULT_SERIF_MODE = オフ`（空の吹き出しで出力、後から手動でテキストを入れる）
 - コマ配置もAIに細かく指示したい → `DEFAULT_LAYOUT_MODE = オン`
 - 変形コマを使わず安定出力したい → `DEFAULT_SPECIAL_PANEL = 変形コマオフ`
+- 1ページを3コマのシンプル構成にしたい → `DEFAULT_PANELS = 3` / `DEFAULT_PANELS_MIN = 2` / `DEFAULT_PANELS_MAX = 4`
 
 ---
 
