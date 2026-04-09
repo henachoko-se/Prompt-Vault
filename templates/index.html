@@ -1256,7 +1256,12 @@ async function doRename() {
 // ═══ コードブロックコピー ═══
 function copyCodeBlock(btn) {
   const code = btn.nextElementSibling.querySelector('code');
-  const text = code.textContent;
+  // renderMD が \n→<br> 変換するため innerHTML から復元する
+  const text = code.innerHTML
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
   navigator.clipboard.writeText(text).then(() => {
     btn.textContent = '✅ コピー完了';
     btn.classList.add('copied');
