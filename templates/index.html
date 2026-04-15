@@ -189,6 +189,13 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 }
 .code-wrap:hover .code-copy-btn { opacity:1; }
 .code-copy-btn.copied { border-color:#16a34a; color:#16a34a; background:#f0fdf4; }
+.code-char-count {
+  position:absolute; top:7px; left:10px;
+  font-size:10px; color:#9ca3af; background:#f6f8fa;
+  padding:3px 8px; border-radius:4px; border:1px solid #e5e7eb;
+  opacity:0; transition:opacity .15s; user-select:none; pointer-events:none;
+}
+.code-wrap:hover .code-char-count { opacity:1; }
 #pane-view blockquote { border-left:3px solid var(--accent); padding:4px 12px; color:#6b7280; margin:12px 0; }
 #pane-view table { border-collapse:collapse; width:100%; margin:12px 0; }
 #pane-view th { background:#f3f4f6; padding:8px 12px; border:1px solid var(--border); font-size:13px; }
@@ -1369,7 +1376,8 @@ function renderMD(md) {
   html = html.replace(/\x00CB(\d+)\x00/g, (_, i) => {
     const raw = rawBlocks[i];
     const escaped = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    return `<div class="code-wrap"><button class="code-copy-btn" onclick="copyCodeBlock(this)">📋 コピー</button><pre><code data-raw="${encodeURIComponent(raw)}">${escaped}</code></pre></div>`;
+    const charCount = raw.length.toLocaleString('ja-JP');
+    return `<div class="code-wrap"><span class="code-char-count">${charCount} 字</span><button class="code-copy-btn" onclick="copyCodeBlock(this)">📋 コピー</button><pre><code data-raw="${encodeURIComponent(raw)}">${escaped}</code></pre></div>`;
   });
 
   document.getElementById('pane-view-md').innerHTML = '<p>' + html + '</p>';
