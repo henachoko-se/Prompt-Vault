@@ -167,6 +167,11 @@ def api_folder_info_post():
     else:
         info.pop(path, None)
     save_folder_info(info)
+    # クラウド環境でも再起動後に説明が消えないよう自動コミットする
+    run_git('git add .folder-info.json')
+    folder_name = path.split('/')[-1] if path else 'ルート'
+    action = '更新' if desc else '削除'
+    run_git_args('commit', '-m', f'フォルダ説明を{action}: {folder_name}')
     return jsonify({'ok': True})
 
 # ── 画像ユーティリティ ──────────────────────────────────────────────
