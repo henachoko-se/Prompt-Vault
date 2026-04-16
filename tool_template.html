@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Threads フォロー整理ツール</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f0f2f5; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; gap: 0; }
+h1 { font-size: 20px; color: #1a1a2e; margin-bottom: 6px; margin-top: 4px; }
+.subtitle { font-size: 13px; color: #888; margin-bottom: 20px; }
+
+/* メインカード */
+.card {
+  background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.10);
+  width: 100%; max-width: 480px; padding: 28px 28px 24px; text-align: center;
+}
+.progress-bar-wrap { background: #e5e7eb; border-radius: 99px; height: 8px; margin-bottom: 8px; overflow: hidden; }
+.progress-bar { background: linear-gradient(90deg,#f97316,#fb923c); height: 8px; border-radius: 99px; transition: width .3s; }
+.progress-label { font-size: 12px; color: #9ca3af; margin-bottom: 16px; }
+
+/* 小窓バナー */
+.popup-banner {
+  background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 10px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #92400e;
+  display: flex; align-items: center; gap: 8px; text-align: left;
+}
+.popup-banner.active { background: #f0fdf4; border-color: #86efac; color: #166534; }
+.popup-banner .popup-icon { font-size: 18px; flex-shrink: 0; }
+.btn-open-popup {
+  margin-left: auto; padding: 5px 12px; border: none; border-radius: 6px;
+  background: #f97316; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.btn-open-popup:hover { background: #ea6c0c; }
+
+.avatar { font-size: 52px; margin-bottom: 10px; }
+.account-name { font-size: 22px; font-weight: 700; color: #111; margin-bottom: 4px; word-break: break-all; }
+.account-url { font-size: 12px; color: #9ca3af; margin-bottom: 6px; }
+.open-tab-link {
+  font-size: 12px; color: #0969da; text-decoration: none; display: inline-block; margin-bottom: 20px;
+}
+.open-tab-link:hover { text-decoration: underline; }
+
+.action-btns { display: flex; gap: 12px; justify-content: center; }
+.btn-unfollow {
+  flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 15px; font-weight: 700;
+  cursor: pointer; background: #fee2e2; color: #dc2626; transition: all .15s;
+}
+.btn-unfollow:hover { background: #dc2626; color: #fff; transform: scale(1.02); }
+.btn-keep {
+  flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 15px; font-weight: 700;
+  cursor: pointer; background: #dcfce7; color: #16a34a; transition: all .15s;
+}
+.btn-keep:hover { background: #16a34a; color: #fff; transform: scale(1.02); }
+
+.nav-btns { display: flex; gap: 8px; justify-content: center; margin-top: 14px; }
+.btn-sub {
+  padding: 7px 18px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff;
+  font-size: 12px; color: #6b7280; cursor: pointer;
+}
+.btn-sub:hover { background: #f3f4f6; }
+
+/* 完了画面 */
+.done-card {
+  background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.10);
+  width: 100%; max-width: 560px; padding: 32px; display: none;
+}
+.done-title { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+.done-stats { display: flex; gap: 12px; margin: 16px 0; }
+.stat-box { flex: 1; padding: 14px; border-radius: 10px; text-align: center; }
+.stat-box .num { font-size: 30px; font-weight: 700; }
+.stat-box .lbl { font-size: 12px; margin-top: 2px; }
+.stat-unfollow { background: #fee2e2; color: #dc2626; }
+.stat-keep    { background: #dcfce7; color: #16a34a; }
+.stat-total   { background: #f3f4f6; color: #374151; }
+
+.list-title { font-size: 14px; font-weight: 600; margin: 16px 0 8px; color: #374151; }
+.account-list { max-height: 320px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 8px; }
+.list-item { display: flex; align-items: center; padding: 9px 12px; border-bottom: 1px solid #f3f4f6; font-size: 13px; gap: 8px; }
+.list-item:last-child { border-bottom: none; }
+.list-item .li-name { flex: 1; color: #111; }
+.list-item a { color: #0969da; text-decoration: none; font-size: 12px; white-space: nowrap; }
+.list-item a:hover { text-decoration: underline; }
+
+.action-row { display: flex; gap: 8px; margin-top: 14px; }
+.copy-btn {
+  flex: 1; padding: 12px; border: 1.5px solid #d1d5db; border-radius: 8px;
+  background: #fff; font-size: 13px; cursor: pointer; color: #374151;
+}
+.copy-btn:hover { background: #f3f4f6; }
+.restart-btn {
+  flex: 1; padding: 12px; border: none; border-radius: 8px;
+  background: #1a1a2e; color: #fff; font-size: 13px; cursor: pointer;
+}
+.restart-btn:hover { background: #2d2d4e; }
+
+.keyboard-hint { font-size: 11px; color: #bbb; margin-top: 10px; }
+kbd { background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 3px; padding: 1px 5px; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<h1>🧹 Threads フォロー整理ツール</h1>
+<p class="subtitle">フォロバなし 360人 を1件ずつ確認してフォロー解除を判断します</p>
+
+<!-- メインカード -->
+<div class="card" id="main-card">
+  <div class="progress-bar-wrap"><div class="progress-bar" id="prog-bar" style="width:0%"></div></div>
+  <div class="progress-label" id="prog-label">読み込み中...</div>
+
+  <!-- 小窓トグル -->
+  <div class="popup-banner" id="popup-banner">
+    <span class="popup-icon">🪟</span>
+    <span id="popup-status-text">小窓モードOFF：ボタンを押して有効にする</span>
+    <button class="btn-open-popup" id="btn-toggle-popup" onclick="togglePopupMode()">小窓モードをON</button>
+  </div>
+
+  <div class="avatar">👤</div>
+  <div class="account-name" id="acc-name">---</div>
+  <div class="account-url" id="acc-url">---</div>
+  <a id="open-tab-link" href="#" target="_blank" rel="noopener" class="open-tab-link">↗ 別タブで開く</a>
+
+  <div class="action-btns">
+    <button class="btn-unfollow" onclick="decide(true)">✂️ フォロー解除する</button>
+    <button class="btn-keep"     onclick="decide(false)">💚 このまま残す</button>
+  </div>
+  <div class="nav-btns">
+    <button class="btn-sub" onclick="goBack()">◀ 前に戻る</button>
+    <button class="btn-sub" onclick="showDone()">📋 途中で結果を見る</button>
+  </div>
+  <div class="keyboard-hint">
+    キーボード: <kbd>→</kbd> 解除 &nbsp; <kbd>←</kbd> 残す
+  </div>
+</div>
+
+<!-- 完了画面 -->
+<div class="done-card" id="done-card">
+  <div class="done-title">✅ 判断結果</div>
+  <div style="font-size:13px;color:#6b7280;">途中で「結果を見る」ボタンを押した場合、戻って続きを判断できます</div>
+  <div class="done-stats">
+    <div class="stat-box stat-unfollow"><div class="num" id="cnt-unfollow">0</div><div class="lbl">解除する</div></div>
+    <div class="stat-box stat-keep"><div class="num" id="cnt-keep">0</div><div class="lbl">残す</div></div>
+    <div class="stat-box stat-total"><div class="num" id="cnt-total">360</div><div class="lbl">合計</div></div>
+  </div>
+
+  <div class="list-title">✂️ フォロー解除リスト</div>
+  <div class="account-list" id="unfollow-list"></div>
+
+  <div class="action-row">
+    <button class="copy-btn" onclick="copyList()">📋 アカウント名一覧をコピー</button>
+    <button class="copy-btn" onclick="resumeJudging()">▶ 続きを判断する</button>
+  </div>
+  <div class="action-row">
+    <button class="restart-btn" onclick="restart()">🔄 最初からやり直す</button>
+  </div>
+</div>
+
+<script>
+const ACCOUNTS = __ACCOUNTS_JSON__;
+const SAVE_KEY = 'threads_decisions_v1';
+
+let decisions = {};
+let currentIdx = 0;
+let popupWin = null;
+
+// ── 小窓管理 ──────────────────────────────────────────
+let popupMode = false;  // ユーザーが明示的にONにした時だけtrue
+let popupWin = null;
+
+function popupFeatures() {
+  const sw = screen.availWidth, sh = screen.availHeight;
+  const pw = Math.min(500, Math.floor(sw / 2));
+  const ph = sh - 80;
+  const left = sw - pw - 10;
+  return `width=${pw},height=${ph},left=${left},top=40,resizable=yes,scrollbars=yes`;
+}
+
+function togglePopupMode() {
+  if (!popupMode) {
+    // ONにする：今のアカウントを小窓で開く
+    popupMode = true;
+    const url = ACCOUNTS[currentIdx]?.url || 'https://www.threads.com/';
+    popupWin = window.open(url, 'threads_popup', popupFeatures());
+    updatePopupBanner();
+  } else {
+    // OFFにする
+    popupMode = false;
+    updatePopupBanner();
+  }
+}
+
+function navigatePopup(url) {
+  if (!popupMode) return;
+  if (popupWin && !popupWin.closed) {
+    // 既存ウィンドウが生きている → featuresなしで上書きナビ（新規ウィンドウを開かない）
+    window.open(url, 'threads_popup');
+  } else {
+    // 閉じられていた → サイズ指定して新規作成
+    popupWin = window.open(url, 'threads_popup', popupFeatures());
+  }
+}
+
+function updatePopupBanner() {
+  const banner = document.getElementById('popup-banner');
+  const statusText = document.getElementById('popup-status-text');
+  const btn = document.getElementById('btn-toggle-popup');
+  if (popupMode) {
+    banner.classList.add('active');
+    statusText.textContent = '🟢 小窓モードON：次へ進むと自動で切り替わります';
+    btn.textContent = '小窓モードをOFF';
+  } else {
+    banner.classList.remove('active');
+    statusText.textContent = '小窓モードOFF：ONにすると次へ進むたびに自動で切り替わります';
+    btn.textContent = '小窓モードをON';
+  }
+}
+
+// ── データ管理 ───────────────────────────────────────
+function loadSaved() {
+  try {
+    const s = localStorage.getItem(SAVE_KEY);
+    if (s) decisions = JSON.parse(s);
+  } catch(e) {}
+}
+function save() {
+  localStorage.setItem(SAVE_KEY, JSON.stringify(decisions));
+}
+
+function findNextPending(from) {
+  for (let i = from; i < ACCOUNTS.length; i++) {
+    if (decisions[ACCOUNTS[i].name] === undefined) return i;
+  }
+  return -1;
+}
+
+function updateProgress() {
+  const total = ACCOUNTS.length;
+  const done = Object.keys(decisions).length;
+  const pct = Math.round(done / total * 100);
+  document.getElementById('prog-bar').style.width = pct + '%';
+  document.getElementById('prog-label').textContent =
+    done + ' / ' + total + '  （' + pct + '% 完了）';
+}
+
+function render() {
+  updateProgress();
+  updatePopupBanner();
+
+  const next = findNextPending(currentIdx);
+  if (next === -1) { showDone(); return; }
+  currentIdx = next;
+
+  const acc = ACCOUNTS[currentIdx];
+  document.getElementById('acc-name').textContent = '@' + acc.name;
+  document.getElementById('acc-url').textContent = acc.url;
+  document.getElementById('open-tab-link').href = acc.url;
+
+  // 小窓が開いていれば自動ナビ
+  navigatePopup(acc.url);
+}
+
+function decide(unfollow) {
+  const acc = ACCOUNTS[currentIdx];
+  decisions[acc.name] = unfollow;
+  save();
+  currentIdx++;
+  render();
+}
+
+function goBack() {
+  let i = currentIdx - 1;
+  while (i >= 0 && decisions[ACCOUNTS[i].name] === undefined) i--;
+  if (i < 0) return;
+  delete decisions[ACCOUNTS[i].name];
+  currentIdx = i;
+  save();
+  document.getElementById('done-card').style.display = 'none';
+  document.getElementById('main-card').style.display = 'block';
+  render();
+}
+
+function resumeJudging() {
+  document.getElementById('done-card').style.display = 'none';
+  document.getElementById('main-card').style.display = 'block';
+  render();
+}
+
+function showDone() {
+  updateProgress();
+  document.getElementById('main-card').style.display = 'none';
+  document.getElementById('done-card').style.display = 'block';
+
+  const unfollowList = ACCOUNTS.filter(a => decisions[a.name] === true);
+  const keepList     = ACCOUNTS.filter(a => decisions[a.name] === false);
+
+  document.getElementById('cnt-unfollow').textContent = unfollowList.length;
+  document.getElementById('cnt-keep').textContent = keepList.length;
+  document.getElementById('cnt-total').textContent = ACCOUNTS.length;
+
+  const listEl = document.getElementById('unfollow-list');
+  if (unfollowList.length === 0) {
+    listEl.innerHTML = '<div style="padding:16px;text-align:center;color:#9ca3af;font-size:13px;">解除リストはまだありません</div>';
+  } else {
+    listEl.innerHTML = unfollowList.map((a, i) =>
+      '<div class="list-item">'
+      + '<span style="color:#9ca3af;font-size:11px;width:28px;flex-shrink:0;">' + (i+1) + '</span>'
+      + '<span class="li-name">@' + a.name + '</span>'
+      + '<a href="' + a.url + '" target="_blank" rel="noopener">開く →</a>'
+      + '</div>'
+    ).join('');
+  }
+}
+
+function copyList() {
+  const unfollowList = ACCOUNTS.filter(a => decisions[a.name] === true);
+  if (unfollowList.length === 0) { alert('解除リストはまだありません'); return; }
+  const text = unfollowList.map(a => '@' + a.name + '\t' + a.url).join('\n');
+  navigator.clipboard.writeText(text).then(
+    () => alert('コピーしました（' + unfollowList.length + '件）'),
+    () => {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); ta.remove();
+      alert('コピーしました（' + unfollowList.length + '件）');
+    }
+  );
+}
+
+function restart() {
+  if (!confirm('判断内容をリセットして最初からやり直しますか？')) return;
+  decisions = {};
+  currentIdx = 0;
+  save();
+  document.getElementById('done-card').style.display = 'none';
+  document.getElementById('main-card').style.display = 'block';
+  render();
+}
+
+// キーボードショートカット
+document.addEventListener('keydown', e => {
+  if (document.getElementById('main-card').style.display === 'none') return;
+  if (e.key === 'ArrowRight') decide(true);
+  else if (e.key === 'ArrowLeft') decide(false);
+});
+
+// 起動
+loadSaved();
+render();
+</script>
+</body>
+</html>
