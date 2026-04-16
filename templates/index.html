@@ -127,6 +127,7 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 .file-row .dot { width:7px; height:7px; background:var(--accent); border-radius:50%; flex-shrink:0; display:none; }
 .file-row-inner { flex:1; overflow:hidden; display:flex; flex-direction:column; gap:1px; }
 .file-row-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.file-summary { font-size:10px; color:#6b7280; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .file-mtime { font-size:10px; color:#9ca3af; white-space:nowrap; }
 
 /* ── メイン ── */
@@ -933,10 +934,15 @@ function renderTreeNodes(nodes, container, depth) {
       row.style.paddingLeft = (22 + depth * 14) + 'px';
       const thumbUrl = imgIndexCache[node.path];
       const mtimeStr = node.mtime ? formatMtime(node.mtime) : '';
+      const summaryStr = node.summary ? esc(node.summary) : '';
+      const innerRows = `
+        <div class="file-row-name">📄 ${node.name}</div>
+        ${summaryStr ? `<div class="file-summary">${summaryStr}</div>` : ''}
+        ${mtimeStr   ? `<div class="file-mtime">${mtimeStr}</div>`   : ''}`;
       if (thumbUrl) {
-        row.innerHTML = `<img class="file-thumb" src="${thumbUrl}" loading="lazy"><div class="file-row-inner"><div class="file-row-name">📄 ${node.name}</div>${mtimeStr ? `<div class="file-mtime">${mtimeStr}</div>` : ''}</div><span class="dot"></span>`;
+        row.innerHTML = `<img class="file-thumb" src="${thumbUrl}" loading="lazy"><div class="file-row-inner">${innerRows}</div><span class="dot"></span>`;
       } else {
-        row.innerHTML = `<div class="file-row-inner"><div class="file-row-name">📄 ${node.name}</div>${mtimeStr ? `<div class="file-mtime">${mtimeStr}</div>` : ''}</div><span class="dot"></span>`;
+        row.innerHTML = `<div class="file-row-inner">${innerRows}</div><span class="dot"></span>`;
       }
       row.addEventListener('click', () => openFile(node.path));
       row.addEventListener('contextmenu', e => showCtxMenu(e, { type: 'file', path: node.path, name: node.name }));

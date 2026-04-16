@@ -277,6 +277,20 @@ def api_images_delete():
 
 # ── API: ファイルツリー ──────────────────────────────────────────────
 
+def get_file_summary(file_path):
+    """ファイル先頭の # H1 タイトルを取得する"""
+    try:
+        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('# '):
+                    return line[2:].strip()
+                if line:
+                    break
+    except Exception:
+        pass
+    return ''
+
 def build_tree(path, rel='', sort='name_asc'):
     """ディレクトリを再帰的にスキャンしてツリーを構築する（空フォルダも表示）"""
     items = []
@@ -311,7 +325,8 @@ def build_tree(path, rel='', sort='name_asc'):
         elif item.is_file() and item.suffix == '.md' and item.name not in IGNORE_FILES:
             try: mtime = item.stat().st_mtime
             except: mtime = 0
-            items.append({'name': item.name, 'type': 'file', 'path': item_rel, 'mtime': mtime})
+            summary = get_file_summary(item)
+            items.append({'name': item.name, 'type': 'file', 'path': item_rel, 'mtime': mtime, 'summary': summary})
     return items
 
 @app.route('/api/files')
