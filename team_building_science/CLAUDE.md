@@ -22,8 +22,8 @@
 3. `drafts/vol[番号]_[タイトルスネークケース].md` に保存
 
 ### STEP 2: Step1プロンプトのQAテスト自動実行
-1. `prompts/step1_script_maker.md` を読み込む
-2. `prompts/qa_crash_tester.md` のロジックに従い、Step1に対するテストケースを生成
+1. `_tools/step1_script_maker_kai.md` を読み込む
+2. `_tools/qa_crash_tester.md` のロジックに従い、Step1に対するテストケースを生成
 3. 生成したテストケースを `tests/step1/test_cases.md` に保存
 4. **Claude Code自身がStep1のロジックを実行**し、各テストケースの出力を検証
 5. 結果を `tests/step1/test_results.md` に記録
@@ -32,7 +32,7 @@
 1. テスト結果をqa_crash_testerの評価基準（重大度別）で判定
 2. 合格の場合 → `tests/step1/test_report.md` に合格レポートを保存して終了
 3. 不合格の場合 → 改善版プロンプト（V2）を生成し、ユーザーに確認を求める
-4. ユーザーが承認 → `prompts/step1_script_maker.md` を上書き更新
+4. ユーザーが承認 → `_tools/step1_script_maker_kai.md` を上書き更新
 
 ### STEP 4: 完了報告
 - 下書きの保存場所
@@ -46,8 +46,8 @@
 ### STEP 1〜3: フローAと同じ（Step1のテストまで自動実行）
 
 ### STEP 4: Step2テストケース生成（自動）
-1. `prompts/step2_image_gen.md` を読み込む
-2. `prompts/qa_crash_tester.md` のロジックに従い、Step2に対するテストケースを生成
+1. `_tools/step2_image_gen_kai.md` を読み込む
+2. `_tools/qa_crash_tester.md` のロジックに従い、Step2に対するテストケースを生成
 3. 生成したテストケースを `tests/step2/test_cases.md` に保存
 4. ユーザーに「手動でNanaBanana等にテストケースを流してください」と依頼
 
@@ -60,13 +60,20 @@
 ## ファイル命名規則
 
 ```
-articles/
-  vol[番号]_[英語スネークケース].md
-  例: vol101_daily_slack_hack.md
+vol[番号]/              ← 1Volごとにフォルダをまとめてここへ
+  article.md            ← 記事本文
+  prompt.md             ← メインのお土産プロンプト（1本の場合）
+  manga.yaml            ← 漫画スクリプトYAML（ある場合）
+  infographic_[名前].md ← 図解生成プロンプト（複数ある場合）
+  header_image.md       ← ヘッダー画像生成プロンプト
+  sns_post.md           ← SNS投稿文
+  step1_[名前].md       ← Step1プロンプト（複数ある場合）
+  step2_[名前].md       ← Step2プロンプト（複数ある場合）
 
-prompts/
-  vol[番号]_[英語スネークケース]_prompt.md
-  例: vol101_daily_slack_hack_prompt.md
+_tools/                 ← Volに依存しない共有ツール
+  step1_script_maker_kai.md
+  step2_image_gen_kai.md
+  qa_crash_tester.md
 
 drafts/
   vol[番号]_[タイトルスネークケース].md
@@ -127,7 +134,7 @@ Vol.XX となる今回は、〜をお伝えします。
 
 [1〜2文で何ができるかを説明]
 
-[→ プロンプトを見る](../prompts/vol{N}_{英語名}_prompt.md)
+[→ プロンプトを見る](./prompt.md)
 
 ---
 
@@ -183,7 +190,7 @@ Tags: [タグ1], [タグ2], ...
 - [ ] 科学的メカニズムの見出しがあり、認知バイアス名が**太字＋日本語名＋英語名**で記載されているか
 - [ ] 「愛ある厳しさ」セクションで読者の反論を先取りして切り返しているか
 - [ ] 「【今回の明日から使えるお土産】」という定型句があるか
-- [ ] プロンプトへの相対リンク `[→ プロンプトを見る](../prompts/...)` があるか
+- [ ] プロンプトへの相対リンク `[→ プロンプトを見る](./prompt.md)` があるか
 - [ ] 締めのセクションがメタファー形式の見出しか
 - [ ] 「あなた」への呼びかけで読者への共感・免責表現があるか
 - [ ] 絵文字は記事本文に使用していないか（プロンプト内のSystem Messageは除く）
