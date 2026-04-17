@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% if title %}{{ title }} — Prompt Vault{% else %}Prompt Vault{% endif %}</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --accent: #e8621a;
+  --accent2: #fff4ee;
+  --border: #e5e7eb;
+  --bg: #f7f8fa;
+  --dark: #1e1e2e;
+  --content-max: 800px;
+}
+
+body {
+  font-family: 'Segoe UI', Meiryo, sans-serif;
+  background: var(--bg);
+  color: #374151;
+  font-size: 15px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+/* ── ヘッダー ── */
+#hdr {
+  background: var(--dark);
+  color: #fff;
+  padding: 0 24px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
+}
+.logo { font-weight: 700; font-size: 17px; color: #ff8c42; }
+.badge {
+  font-size: 11px; padding: 2px 8px; border-radius: 12px;
+  background: rgba(232,98,26,.25); color: #ff8c42;
+  border: 1px solid rgba(232,98,26,.4);
+}
+#hdr-sp { flex: 1; }
+
+/* ── メインコンテンツ ── */
+#wrap {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 32px 24px 60px;
+}
+
+/* ── エラー ── */
+#error-box {
+  background: #fef2f2;
+  border: 1.5px solid #fca5a5;
+  border-radius: 10px;
+  padding: 32px 24px;
+  text-align: center;
+  margin-top: 40px;
+  color: #991b1b;
+}
+#error-box h2 { font-size: 20px; margin-bottom: 8px; }
+#error-box p { font-size: 14px; color: #b91c1c; }
+
+/* ── ファイル情報バー ── */
+#file-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--border);
+  flex-wrap: wrap;
+}
+#file-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111;
+  flex: 1;
+  min-width: 200px;
+  line-height: 1.4;
+}
+#copy-all-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+#copy-all-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent2); }
+#copy-all-btn.copied { border-color: #16a34a; color: #16a34a; background: #f0fdf4; }
+
+/* ── Markdown レンダリング ── */
+#md-body h1 { font-size: 22px; border-bottom: 2px solid var(--border); padding-bottom: 8px; margin: 0 0 16px; color: #111; }
+#md-body h2 { font-size: 18px; margin: 28px 0 10px; color: #1f2937; }
+#md-body h3 { font-size: 16px; margin: 20px 0 8px; color: #374151; }
+#md-body p  { margin: 8px 0; }
+#md-body ul, #md-body ol { margin: 8px 0 8px 22px; }
+#md-body li { margin: 4px 0; }
+#md-body strong { color: #1f2937; }
+#md-body em { font-style: italic; }
+#md-body code {
+  background: #f3f4f6; padding: 2px 6px; border-radius: 4px;
+  font-size: 13px; font-family: Consolas, monospace;
+}
+#md-body pre {
+  background: #f6f8fa; color: #24292e;
+  padding: 16px; border-radius: 8px; font-size: 13px;
+  overflow-x: auto; margin: 14px 0;
+  border: 1px solid #d1d5db;
+  line-height: 1.65;
+}
+#md-body pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+#md-body blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 4px 14px; color: #6b7280; margin: 14px 0;
+}
+#md-body hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+#md-body table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+#md-body th { background: #f3f4f6; padding: 9px 12px; border: 1px solid var(--border); font-size: 13px; text-align: left; }
+#md-body td { padding: 8px 12px; border: 1px solid var(--border); font-size: 13px; }
+#md-body tr:nth-child(even) td { background: #fafafa; }
+
+/* コードブロックラッパー */
+.code-wrap { position: relative; margin: 14px 0; }
+.code-copy-btn {
+  position: absolute; top: 8px; right: 10px;
+  padding: 4px 12px; border-radius: 5px; border: 1px solid #d1d5db;
+  background: #fff; font-size: 12px; color: #374151; cursor: pointer;
+  opacity: 0; transition: opacity .15s, border-color .15s, color .15s;
+}
+.code-wrap:hover .code-copy-btn { opacity: 1; }
+.code-copy-btn.copied { border-color: #16a34a; color: #16a34a; background: #f0fdf4; }
+.code-char-count {
+  position: absolute; top: 8px; left: 12px;
+  font-size: 10px; color: #9ca3af; background: #f6f8fa;
+  padding: 3px 8px; border-radius: 4px; border: 1px solid #e5e7eb;
+  opacity: 0; transition: opacity .15s; pointer-events: none;
+}
+.code-wrap:hover .code-char-count { opacity: 1; }
+
+/* ── 画像ギャラリー ── */
+#img-section { border-top: 2px solid var(--border); margin-top: 32px; padding-top: 20px; }
+#img-section h3 { font-size: 14px; font-weight: 700; color: #374151; margin-bottom: 14px; }
+#img-gallery {
+  display: flex; flex-wrap: wrap; gap: 12px;
+}
+.img-card {
+  border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--border);
+  width: 140px; height: 140px; flex-shrink: 0;
+  background: #f9fafb; cursor: zoom-in;
+}
+.img-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ライトボックス */
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.85);
+  z-index: 9999; display: none;
+  align-items: center; justify-content: center; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 6px; }
+
+/* ── フッター ── */
+#footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 12px;
+  color: #9ca3af;
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+}
+#footer a { color: var(--accent); text-decoration: none; }
+#footer a:hover { text-decoration: underline; }
+
+/* ── モバイル対応 ── */
+@media (max-width: 640px) {
+  #wrap { padding: 20px 16px 48px; }
+  #hdr { padding: 0 16px; }
+  #file-title { font-size: 17px; }
+  #md-body h1 { font-size: 19px; }
+  #md-body h2 { font-size: 16px; }
+  #md-body h3 { font-size: 15px; }
+  #md-body pre { font-size: 12px; padding: 12px; }
+  .img-card { width: 110px; height: 110px; }
+  #file-info { flex-direction: column; align-items: flex-start; gap: 10px; }
+  #copy-all-btn { align-self: flex-start; }
+}
+@media (max-width: 380px) {
+  body { font-size: 14px; }
+  #md-body pre { font-size: 11px; }
+  .img-card { width: 90px; height: 90px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<div id="hdr">
+  <span style="font-size:20px;">📦</span>
+  <span class="logo">Prompt Vault</span>
+  <span class="badge">共有</span>
+  <span id="hdr-sp"></span>
+</div>
+
+<!-- ライトボックス -->
+<div id="lightbox" onclick="this.classList.remove('open')">
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<!-- メインコンテンツ -->
+<div id="wrap">
+
+{% if error %}
+  <div id="error-box">
+    <h2>🔒 アクセスできません</h2>
+    <p>{{ error }}</p>
+  </div>
+{% else %}
+
+  <div id="file-info">
+    <div id="file-title">{{ title }}</div>
+    <button id="copy-all-btn" onclick="copyAll()">📋 プロンプト全文をコピー</button>
+  </div>
+
+  <div id="md-body"></div>
+
+  {% if images %}
+  <div id="img-section">
+    <h3>🖼 添付画像</h3>
+    <div id="img-gallery">
+      {% for url in images %}
+      <div class="img-card" onclick="openLightbox('{{ url }}')">
+        <img src="{{ url }}" loading="lazy" alt="画像">
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+{% endif %}
+
+</div>
+
+<!-- フッター -->
+<div id="footer">
+  <a href="/">📦 Prompt Vault</a> で管理・共有されたプロンプトです
+</div>
+
+<script>
+{% if content %}
+const RAW_CONTENT = {{ content | tojson }};
+{% else %}
+const RAW_CONTENT = null;
+{% endif %}
+
+// ── Markdown レンダラー（index.html と同一ロジック）──
+function renderMD(md) {
+  const rawBlocks = [];
+  const ph = i => `\x00CB${i}\x00`;
+  md = md.replace(/````(\w*)\n([\s\S]*?)````|```(\w*)\n([\s\S]*?)```/g, (_, l4, c4, l3, c3) => {
+    const raw = (c4 !== undefined ? c4 : c3).trimEnd();
+    return ph(rawBlocks.push(raw) - 1);
+  });
+
+  let html = md
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/`([^`\n]+)`/g,'<code>$1</code>')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/^---$/gm,'<hr>')
+    .replace(/^[-*] (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>[\s\S]+?<\/li>)/gm,'<ul>$1</ul>')
+    .replace(/<\/ul>\n<ul>/g,'')
+    .replace(/^\d+\. (.+)$/gm,'<oli>$1</oli>')
+    .replace(/(<oli>[\s\S]+?<\/oli>)/gm,'<ol>$1</ol>')
+    .replace(/<\/ol>\n<ol>/g,'')
+    .replace(/<oli>/g,'<li>').replace(/<\/oli>/g,'</li>')
+    .replace(/\|(.+)\|\n\|[-| :]+\|\n((?:\|.+\|\n?)+)/g,(m,hdr,rows)=>{
+      const ths=hdr.split('|').filter(c=>c.trim()).map(c=>`<th>${c.trim()}</th>`).join('');
+      const trs=rows.trim().split('\n').map(r=>`<tr>${r.split('|').filter(c=>c.trim()).map(c=>`<td>${c.trim()}</td>`).join('')}</tr>`).join('');
+      return `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+    })
+    .replace(/^> (.+)$/gm,'<blockquote>$1</blockquote>')
+    .replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');
+
+  html = html.replace(/\x00CB(\d+)\x00/g, (_, i) => {
+    const raw = rawBlocks[i];
+    const esc = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const cnt = raw.length.toLocaleString('ja-JP');
+    return `<div class="code-wrap"><span class="code-char-count">${cnt} 字</span><button class="code-copy-btn" onclick="copyCodeBlock(this)">📋 コピー</button><pre><code data-raw="${encodeURIComponent(raw)}">${esc}</code></pre></div>`;
+  });
+
+  document.getElementById('md-body').innerHTML = '<p>' + html + '</p>';
+}
+
+function copyCodeBlock(btn) {
+  const raw = decodeURIComponent(btn.nextElementSibling.querySelector('code').dataset.raw || '');
+  navigator.clipboard.writeText(raw).then(() => {
+    btn.textContent = '✅ コピー済み';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 コピー'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function copyAll() {
+  if (!RAW_CONTENT) return;
+  navigator.clipboard.writeText(RAW_CONTENT).then(() => {
+    const btn = document.getElementById('copy-all-btn');
+    btn.textContent = '✅ コピーしました！';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 プロンプト全文をコピー'; btn.classList.remove('copied'); }, 2500);
+  });
+}
+
+function openLightbox(url) {
+  document.getElementById('lightbox-img').src = url;
+  document.getElementById('lightbox').classList.add('open');
+}
+
+// 初期化
+if (RAW_CONTENT) {
+  renderMD(RAW_CONTENT);
+}
+</script>
+</body>
+</html>

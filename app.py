@@ -14,6 +14,7 @@ from flask import Flask, request, jsonify, render_template, session, redirect, u
 
 VAULT = Path(__file__).parent
 CONFIG_FILE  = VAULT / '.config.json'
+SHARES_FILE  = VAULT / '.shares.json'
 IMAGES_DIR   = VAULT / '_images'
 IGNORE_DIRS  = {'.git', '__pycache__', 'templates', 'static', 'node_modules',
                 '.venv', 'venv', '.env', '_images'}
@@ -761,6 +762,87 @@ def login():
 def logout():
     session.clear()
     return redirect('/login')
+
+# ── 共有リンク ──────────────────────────────────────────────────────
+
+def load_shares():
+    if SHARES_FILE.exists():
+        return json.loads(SHARES_FILE.read_text(encoding='utf-8'))
+    return {}
+
+def save_shares(data):
+    SHARES_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+
+@app.route('/api/share', methods=['POST'])
+@login_required
+def api_share_create():
+    from datetime import datetime
+    data = request.json
+    path = data.get('path', '').strip()
+    file_path = (VAULT / path).resolve()
+    if not str(file_path).startswith(str(VAULT.resolve())) or not file_path.exists():
+        return jsonify({'error': 'ファイルが見つかりません'}), 404
+    shares = load_shares()
+    # 既存トークンがあればそのまま返す
+    for token, info in shares.items():
+        if info.get('path') == path:
+            return jsonify({'ok': True, 'token': token, 'existed': True})
+    token = secrets.token_urlsafe(24)
+    shares[token] = {'path': path, 'created_at': datetime.now().isoformat()}
+    save_shares(shares)
+    return jsonify({'ok': True, 'token': token, 'existed': False})
+
+@app.route('/api/share', methods=['DELETE'])
+@login_required
+def api_share_delete():
+    data = request.json
+    token = data.get('token', '').strip()
+    shares = load_shares()
+    if token in shares:
+        del shares[token]
+        save_shares(shares)
+    return jsonify({'ok': True})
+
+@app.route('/api/share/info')
+@login_required
+def api_share_info():
+    path = request.args.get('path', '').strip()
+    shares = load_shares()
+    for token, info in shares.items():
+        if info.get('path') == path:
+            return jsonify({'token': token, 'created_at': info.get('created_at', '')})
+    return jsonify({'token': None})
+
+@app.route('/share/<token>')
+def share_view(token):
+    shares = load_shares()
+    if token not in shares:
+        return render_template('share.html', error='このリンクは無効か、削除されています。',
+                               content=None, title=None, images=[]), 404
+    path = shares[token].get('path', '')
+    file_path = (VAULT / path).resolve()
+    if not str(file_path).startswith(str(VAULT.resolve())) or not file_path.exists():
+        return render_template('share.html', error='ファイルが見つかりません。',
+                               content=None, title=None, images=[]), 404
+    content = file_path.read_text(encoding='utf-8', errors='replace')
+    title = get_file_summary(file_path) or file_path.stem
+    imgs = list_images(path)
+    image_urls = [f'/share/{token}/_img/{img.name}' for img in imgs]
+    return render_template('share.html', error=None, content=content,
+                           title=title, token=token, path=path, images=image_urls)
+
+@app.route('/share/<token>/_img/<filename>')
+def share_image(token, filename):
+    shares = load_shares()
+    if token not in shares:
+        return '', 404
+    path = shares[token].get('path', '')
+    img_dir = get_image_dir(path)
+    safe_name = Path(filename).name
+    img_path = (img_dir / safe_name).resolve()
+    if not str(img_path).startswith(str(VAULT.resolve())) or not img_path.exists():
+        return '', 404
+    return send_file(img_path)
 
 # ── Ping（スリープ防止用）────────────────────────────────────────────
 

@@ -148,6 +148,12 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 }
 #copy-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent2); }
 #copy-btn.copied { border-color:#16a34a; color:#16a34a; background:#f0fdf4; }
+#share-btn {
+  padding:4px 12px; border-radius:16px; border:1px solid #d1d5db; background:#f9fafb;
+  font-size:12px; color:#374151; cursor:pointer; display:flex; align-items:center; gap:5px;
+  white-space:nowrap; transition:all .15s;
+}
+#share-btn:hover { border-color:#0969da; color:#0969da; background:#f0f9ff; }
 #tabs { display:none; background:#fff; border-bottom:1px solid var(--border); padding:0 18px; }
 .tab {
   display:inline-flex; align-items:center; gap:4px;
@@ -482,6 +488,7 @@ label.lbl:first-child { margin-top:0; }
     <span id="char-count" style="font-size:11px;color:#9ca3af;white-space:nowrap;margin-left:6px;"></span>
     <span style="flex:1"></span>
     <button id="copy-btn" onclick="copyMarkdown()" title="Markdownをそのままコピー（LLMに貼り付け用）">📋 コピー</button>
+    <button id="share-btn" onclick="openShareDlg()" title="共有リンクを発行">🔗 共有</button>
   </div>
   <div id="tabs">
     <div class="tab active" id="tab-view"  onclick="showTab('view')">👁 表示</div>
@@ -718,6 +725,40 @@ label.lbl:first-child { margin-top:0; }
 </div>
 
 <div id="toast-box"></div>
+
+<!-- ダイアログ: 共有リンク -->
+<dialog id="dlgShare">
+  <div class="dlg-hdr">
+    <span>🔗</span><span class="dlg-title">共有リンク</span>
+    <button class="dlg-close" onclick="dlgShare.close()">✕</button>
+  </div>
+  <div class="dlg-body">
+    <div id="share-loading" style="color:#9ca3af;font-size:13px;padding:8px 0;">読み込み中...</div>
+    <div id="share-active" style="display:none">
+      <p style="font-size:13px;color:#374151;margin-bottom:10px;">
+        このリンクを知っている人は<strong>パスワードなし</strong>でプロンプトを閲覧できます。
+      </p>
+      <label class="lbl">共有URL</label>
+      <div class="inp-row">
+        <input class="inp" id="share-url-input" readonly style="font-size:12px;color:#374151;">
+        <button class="btn-sec" id="share-copy-btn" onclick="copyShareUrl()" style="white-space:nowrap;">📋 コピー</button>
+      </div>
+      <p style="font-size:11px;color:#9ca3af;margin-top:6px;">QRコードや直接URLを送ることでシェアできます。</p>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+        <button class="btn-sec" onclick="revokeShare()" style="font-size:12px;color:#dc2626;border-color:#fca5a5;">
+          🗑 共有を停止する
+        </button>
+      </div>
+    </div>
+    <div id="share-none" style="display:none">
+      <p style="font-size:13px;color:#374151;margin-bottom:14px;">
+        まだ共有リンクが発行されていません。<br>
+        発行すると、リンクを知っている人が<strong>パスワードなし</strong>で閲覧できます。
+      </p>
+      <button class="btn-main" onclick="createShare()">🔗 共有リンクを発行</button>
+    </div>
+  </div>
+</dialog>
 
 <!-- ダイアログ: フォルダ作成 -->
 <dialog id="dlgMkdir">
@@ -1332,6 +1373,62 @@ async function copyMarkdown() {
     document.body.removeChild(ta);
     toast('コピーしました', 'ok');
   }
+}
+
+// ═══ 共有リンク ═══
+async function openShareDlg() {
+  if (!cur) return;
+  dlgShare.showModal();
+  document.getElementById('share-loading').style.display = 'block';
+  document.getElementById('share-active').style.display = 'none';
+  document.getElementById('share-none').style.display = 'none';
+  try {
+    const d = await api('/api/share/info?path=' + encodeURIComponent(cur));
+    document.getElementById('share-loading').style.display = 'none';
+    if (d.token) {
+      const url = location.origin + '/share/' + d.token;
+      document.getElementById('share-url-input').value = url;
+      document.getElementById('share-active').style.display = 'block';
+    } else {
+      document.getElementById('share-none').style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('share-loading').textContent = '取得失敗: ' + e.message;
+  }
+}
+
+async function createShare() {
+  if (!cur) return;
+  const d = await api('/api/share', 'POST', { path: cur });
+  if (d.ok) {
+    const url = location.origin + '/share/' + d.token;
+    document.getElementById('share-url-input').value = url;
+    document.getElementById('share-none').style.display = 'none';
+    document.getElementById('share-active').style.display = 'block';
+    toast('共有リンクを発行しました', 'ok');
+  } else {
+    toast(d.error || '発行に失敗しました', 'err');
+  }
+}
+
+async function revokeShare() {
+  const url = document.getElementById('share-url-input').value;
+  const token = url.split('/share/')[1];
+  if (!token || !confirm('共有を停止しますか？\nリンクを知っている人がアクセスできなくなります。')) return;
+  const d = await api('/api/share', 'DELETE', { token });
+  if (d.ok) {
+    document.getElementById('share-active').style.display = 'none';
+    document.getElementById('share-none').style.display = 'block';
+    toast('共有を停止しました', 'info');
+  }
+}
+
+async function copyShareUrl() {
+  const url = document.getElementById('share-url-input').value;
+  await navigator.clipboard.writeText(url);
+  const btn = document.getElementById('share-copy-btn');
+  btn.textContent = '✅ コピー済み';
+  setTimeout(() => { btn.textContent = '📋 コピー'; }, 2000);
 }
 
 function showHelp() {
