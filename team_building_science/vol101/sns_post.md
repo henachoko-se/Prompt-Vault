@@ -30,7 +30,7 @@
 ## 【Threads 投稿2】URL（返信形式）
 
 ```
-{記事URLをここに貼る}
+https://note.com/henachoko_pm/n/n84b1adb7b052
 ```
 
 ---
@@ -46,5 +46,5 @@
 （ネガティビティ・バイアス）
 
 アドバイスなしで「やれていること」を1問1答で引き出すAI壁打ちプロンプト、無料公開しました👇
-{記事URL}
+https://note.com/henachoko_pm/n/n84b1adb7b052
 ```
