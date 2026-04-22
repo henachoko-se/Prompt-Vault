@@ -6,7 +6,9 @@ GeminiのGem（カスタム指示）やChatGPTのGPTsに登録して使用して
 ## 使い方
 
 1. 以下のプロンプト全文をコピーする
-2. Gemini の「Gemを作成」→ カスタム指示に貼り付けて保存する
+2. 以下のいずれかに登録する
+   - **Gemini Gem：** 左メニューの「Gem」→「Gemを作成」→ カスタム指示に貼り付けて保存する
+   - **ChatGPT GPTs：** 「Explore GPTs」→「＋ Create」→「Configure」タブ→ Instructionsに貼り付けて保存する
 3. 図解したい長文・エピソード・画像をチャット欄に送信する
 4. 出力された台本をコピーして、STEP2（画像生成エンジン）に貼り付ける
 
