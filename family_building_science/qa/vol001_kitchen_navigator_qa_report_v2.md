@@ -1,6 +1,6 @@
 # Vol.001 キッチンナビゲーター QA再テストレポート（V2検証）
 
-**対象プロンプト:** `prompts/vol001_kitchen_navigator_prompt_v2.md`
+**対象プロンプト:** `vol001/prompt.md`（V2版）
 **前回レポート:** `qa/vol001_kitchen_navigator_qa_report.md`
 **実施日:** 2026-04-15
 **目的:** V1で検出されたCritical 2件・Major 4件が修正されているかを確認する

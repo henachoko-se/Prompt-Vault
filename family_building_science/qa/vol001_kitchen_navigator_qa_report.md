@@ -1,6 +1,6 @@
 # Vol.001 キッチンナビゲーター QAテストレポート
 
-**対象プロンプト:** `prompts/vol001_kitchen_navigator_prompt.md`
+**対象プロンプト:** `vol001/prompt.md`
 **QA手法:** `team_building/qa_crash_tester.md` に基づく3フェーズ検証
 **実施日:** 2026-04-15
 **重点検証項目:** 調理時間の妥当性（参照テーブルとスキル係数の計算精度）
