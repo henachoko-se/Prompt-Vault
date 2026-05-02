@@ -24,7 +24,7 @@
 
 このプロンプトはそこに特化して作っています。
 
-**ChatGPT（GPT-4o以上推奨）またはClaude**で使えます。
+**ChatGPT・Claude・Gemini・Grok など、主要なAIチャットで使えます。**
 
 ---
 

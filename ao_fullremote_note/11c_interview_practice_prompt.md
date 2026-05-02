@@ -15,7 +15,7 @@
 
 何度でも繰り返せるので、本番前にとことん練習してください！！
 
-**ChatGPT（GPT-4o以上推奨）またはClaude**で使えます。
+**ChatGPT・Claude・Gemini・Grok など、主要なAIチャットで使えます。**
 
 ---
 
