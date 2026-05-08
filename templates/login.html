@@ -80,6 +80,47 @@
     transition: background 0.15s;
   }
   button:hover { background: #2ea043; }
+  .google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    margin-top: 0;
+    padding: 11px;
+    background: #fff;
+    color: #24292f;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .google-btn:hover { background: #f6f8fa; }
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 22px 0 18px;
+    color: #6e7681;
+    font-size: 12px;
+  }
+  .divider::before,
+  .divider::after {
+    content: "";
+    height: 1px;
+    background: #30363d;
+    flex: 1;
+  }
+  .password-form.collapsed { display: none; }
+  .password-toggle {
+    margin-top: 16px;
+    text-align: center;
+    color: #8b949e;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .password-toggle:hover { color: #c9d1d9; }
 </style>
 </head>
 <body>
@@ -88,7 +129,14 @@
     <h1>Prompt Vault</h1>
     <p>プロンプト管理ツール</p>
   </div>
-  <form method="POST" action="/login">
+  {% if google_enabled %}
+  <a class="google-btn" href="/auth/google">
+    <span>G</span>
+    <span>Googleでログイン</span>
+  </a>
+  <div class="divider">または</div>
+  {% endif %}
+  <form method="POST" action="/login" class="password-form{% if google_enabled and not error %} collapsed{% endif %}" id="password-form">
     <label for="password">パスワード</label>
     <input type="password" id="password" name="password" autofocus placeholder="パスワードを入力">
     {% if error %}
@@ -96,6 +144,11 @@
     {% endif %}
     <button type="submit">ログイン</button>
   </form>
+  {% if google_enabled %}
+  <div class="password-toggle" onclick="document.getElementById('password-form').classList.toggle('collapsed')">
+    パスワードでログイン
+  </div>
+  {% endif %}
 </div>
 </body>
 </html>

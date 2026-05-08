@@ -59,6 +59,36 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 }
 #new-btn:hover { border-color:var(--accent); color:var(--accent); background:#fff8f5; }
 #new-folder-btn:hover { border-color:#0969da; color:#0969da; background:#f0f9ff; }
+.side-search { margin:6px 10px; display:flex; flex-direction:column; gap:6px; }
+.side-search input, .side-search select {
+  width:100%; border:1px solid var(--border); border-radius:6px;
+  padding:7px 9px; font-size:12px; outline:none; background:#fff;
+}
+.side-search input:focus, .side-search select:focus { border-color:var(--accent); }
+.side-filter-row { display:grid; grid-template-columns:1fr 1fr auto; gap:5px; }
+.icon-mini {
+  border:1px solid var(--border); border-radius:6px; background:#fff; color:#6b7280;
+  width:34px; cursor:pointer; font-size:13px;
+}
+.icon-mini.active { color:#eab308; border-color:#facc15; background:#fefce8; }
+.side-section-title {
+  margin:9px 12px 4px; font-size:11px; font-weight:700; color:#9ca3af;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.side-results { border-top:1px solid #f3f4f6; margin-top:4px; padding-top:4px; }
+.file-row .star {
+  width:18px; flex-shrink:0; color:#d1d5db; text-align:center; cursor:pointer;
+}
+.file-row .star.on { color:#eab308; }
+.file-badges { display:flex; gap:4px; flex-wrap:wrap; margin-top:2px; }
+.badge {
+  display:inline-flex; align-items:center; max-width:95px; padding:1px 5px;
+  border-radius:4px; font-size:10px; line-height:1.35; color:#4b5563;
+  background:#f3f4f6; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.badge.status-draft { background:#fff7ed; color:#c2410c; }
+.badge.status-active { background:#dcfce7; color:#166534; }
+.badge.status-archived { background:#e5e7eb; color:#4b5563; }
 
 /* 右クリックメニュー */
 #ctx-menu {
@@ -163,6 +193,20 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 .tab:hover { color:var(--accent); }
 .tab.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
 #content { flex:1; overflow-y:auto; padding:20px; }
+.meta-bar {
+  display:none; align-items:center; gap:6px; padding:8px 18px;
+  border-bottom:1px solid var(--border); background:#fafafa;
+}
+.meta-bar input, .meta-bar select {
+  border:1px solid var(--border); border-radius:6px; padding:6px 8px;
+  font-size:12px; background:#fff; outline:none;
+}
+.meta-bar input:focus, .meta-bar select:focus { border-color:var(--accent); }
+.meta-star {
+  border:1px solid var(--border); background:#fff; border-radius:6px;
+  width:34px; height:30px; cursor:pointer; color:#9ca3af;
+}
+.meta-star.on { color:#eab308; border-color:#facc15; background:#fefce8; }
 
 /* ── ウェルカム ── */
 #pane-welcome { text-align:center; padding:60px 20px; }
@@ -247,13 +291,27 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 }
 #lightbox img { max-width:90vw; max-height:90vh; border-radius:6px; }
 /* ── 編集 ── */
+#edit-tools { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+.edit-tool-btn {
+  padding:6px 10px; border:1px solid var(--border); border-radius:6px;
+  background:#fff; color:#374151; cursor:pointer; font-size:12px;
+}
+.edit-tool-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent2); }
+#edit-wrap { display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,42%); gap:12px; height:calc(100vh - var(--header) - var(--footer) - 52px - 44px - 56px); }
 #edit-ta {
-  width:100%; height:calc(100vh - var(--header) - var(--footer) - 52px - 40px - 20px);
+  width:100%; height:100%;
   font-family:Consolas,'Cascadia Code',monospace; font-size:13px; line-height:1.7;
   border:1.5px solid var(--border); border-radius:8px; padding:14px;
   resize:none; outline:none; background:#fafafa;
 }
 #edit-ta:focus { border-color:var(--accent); background:#fff; }
+#edit-preview {
+  height:100%; overflow:auto; border:1.5px solid var(--border); border-radius:8px;
+  padding:14px; background:#fff; line-height:1.75;
+}
+#edit-preview h1 { font-size:20px; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom:12px; }
+#edit-preview h2 { font-size:16px; margin:18px 0 7px; }
+#edit-preview pre { background:#f6f8fa; border:1px solid #d1d5db; padding:12px; border-radius:8px; overflow:auto; }
 
 /* ── 履歴 ── */
 .h-item { display:flex; align-items:flex-start; gap:10px; padding:12px 0; border-bottom:1px solid #f3f4f6; }
@@ -353,6 +411,7 @@ body { font-family: 'Segoe UI', Meiryo, sans-serif; background: var(--bg); heigh
 .fbtn-push:hover { background:#218838; }
 .fbtn-pull { background:#0969da; color:#fff; }
 .fbtn-pull:hover { background:#075bb5; }
+#git-summary { font-size:11px; color:#6b7280; white-space:nowrap; max-width:280px; overflow:hidden; text-overflow:ellipsis; }
 
 /* ── ダイアログ ── */
 dialog { border:none; border-radius:12px; padding:0; box-shadow:0 10px 40px rgba(0,0,0,.25); max-width:480px; width:95vw; }
@@ -414,6 +473,9 @@ label.lbl:first-child { margin-top:0; }
   /* コンテンツパディング縮小 */
   #content { padding:12px; }
   #pane-view { max-width:100%; }
+  #edit-wrap { grid-template-columns:1fr; height:auto; }
+  #edit-ta { height:52vh; }
+  #edit-preview { height:auto; min-height:240px; }
   /* 差分テーブルをモバイルでは折りたたむ */
   .diff-sbs { table-layout:auto; }
   .diff-sbs colgroup col:nth-child(1),
@@ -454,6 +516,14 @@ label.lbl:first-child { margin-top:0; }
     <button id="new-btn" onclick="dlgNew.showModal()">＋ プロンプト</button>
     <button id="new-folder-btn" onclick="showMkdirDlg()">📁 フォルダ</button>
   </div>
+  <div class="side-search">
+    <input id="search-q" type="search" placeholder="全文検索..." oninput="onSearchInput()">
+    <div class="side-filter-row">
+      <select id="search-tag" onchange="onSearchInput()"><option value="">タグ全部</option></select>
+      <select id="search-status" onchange="onSearchInput()"><option value="">状態全部</option></select>
+      <button class="icon-mini" id="search-fav" onclick="toggleFavoriteFilter()" title="お気に入りだけ">★</button>
+    </div>
+  </div>
   <div class="side-sort">
     <label>並び順:</label>
     <select id="sort-sel" onchange="onSortChange()">
@@ -463,6 +533,9 @@ label.lbl:first-child { margin-top:0; }
     </select>
   </div>
   <button id="help-side-btn" onclick="showHelp()">❓ 使い方・GitHub接続ガイド</button>
+  <div class="side-section-title" id="recent-title">最近編集</div>
+  <div id="recent-list"></div>
+  <div class="side-results" id="search-results" style="display:none"></div>
   <div id="drop-root">📂 ここにドロップ → ルートへ移動</div>
   <div id="tree"></div>
 </div>
@@ -496,6 +569,15 @@ label.lbl:first-child { margin-top:0; }
     <div class="tab"        id="tab-hist"  onclick="showTab('hist')">🕐 履歴</div>
     <div class="tab"        id="tab-diff"  onclick="showTab('diff')">± 差分</div>
   </div>
+  <div class="meta-bar" id="meta-bar">
+    <button class="meta-star" id="meta-fav" onclick="toggleCurrentFavorite()" title="お気に入り">★</button>
+    <select id="meta-status" onchange="saveCurrentMeta()">
+      <option value="draft">下書き</option>
+      <option value="active">使用中</option>
+      <option value="archived">保管</option>
+    </select>
+    <input id="meta-tags" type="text" placeholder="タグ（カンマ区切り）" onchange="saveCurrentMeta()" onkeydown="if(event.key==='Enter'){this.blur()}">
+  </div>
   <div id="content">
 
     <!-- ウェルカム -->
@@ -527,7 +609,15 @@ label.lbl:first-child { margin-top:0; }
 
     <!-- 編集 -->
     <div id="pane-edit" style="display:none">
-      <textarea id="edit-ta" spellcheck="false" oninput="onEdit()"></textarea>
+      <div id="edit-tools">
+        <button class="edit-tool-btn" onclick="copyMarkdown()">📋 コピー</button>
+        <button class="edit-tool-btn" onclick="refreshEditPreview()">👁 プレビュー更新</button>
+        <button class="edit-tool-btn" onclick="showWorkingDiff()">± 未保存差分</button>
+      </div>
+      <div id="edit-wrap">
+        <textarea id="edit-ta" spellcheck="false" oninput="onEdit()"></textarea>
+        <div id="edit-preview"></div>
+      </div>
     </div>
 
     <!-- 履歴 -->
@@ -719,6 +809,7 @@ label.lbl:first-child { margin-top:0; }
 <!-- フッター -->
 <div id="footer">
   <input id="ci" type="text" placeholder="保存コメント（省略可 — 空欄なら変更内容を自動検知）" onkeydown="if(event.key==='Enter') doCommit()">
+  <span id="git-summary"></span>
   <button class="fbtn fbtn-save" onclick="doCommit()">💾 保存</button>
   <button class="fbtn fbtn-push" onclick="doPush()">⬆ Push</button>
   <button class="fbtn fbtn-pull" onclick="doPull()">⬇ Pull</button>
@@ -804,14 +895,8 @@ label.lbl:first-child { margin-top:0; }
     <label class="lbl">リポジトリURL</label>
     <input class="inp" id="gh-url" type="text" placeholder="https://github.com/ユーザー名/リポジトリ名">
     <div class="hint">例: https://github.com/henachoko-se/Prompt-Vault</div>
-    <label class="lbl">Personal Access Token (PAT)</label>
-    <div class="inp-row">
-      <input class="inp" id="gh-tok" type="password" placeholder="ghp_xxxxxxxxxxxx">
-      <button class="btn-sec" onclick="togglePW()" style="white-space:nowrap;">表示</button>
-    </div>
-    <div class="hint">
-      取得方法は「❓ 使い方」→「GitHub に接続する手順」を参照<br>
-      <span id="gh-tok-status" style="color:#2da44e;font-weight:600;"></span>
+    <div class="hint" id="gh-token-note">
+      Cloud Run の認証トークンは Google Cloud Secret Manager の <code>prompt-vault-github-token</code> で管理します。
     </div>
   </div>
   <div class="dlg-foot">
@@ -833,6 +918,24 @@ label.lbl:first-child { margin-top:0; }
     <input class="inp" id="new-folder-txt" type="text" placeholder="例: character_goods  または  キャラグッズ" oninput="if(this.value) document.getElementById('new-folder').value=''">
     <label class="lbl">ファイル名 <span style="font-weight:400;color:#9ca3af;">（.md は自動で付きます・日本語OK）</span></label>
     <input class="inp" id="new-name" type="text" placeholder="例: step1_v2  または  ステップ1改">
+    <label class="lbl">タイトル <span style="font-weight:400;color:#9ca3af;">（空欄ならファイル名）</span></label>
+    <input class="inp" id="new-title" type="text" placeholder="例: 記事作成プロンプト Vol.100">
+    <label class="lbl">テンプレート</label>
+    <select class="inp" id="new-template">
+      <option value="blank">空のプロンプト</option>
+      <option value="article">記事作成</option>
+      <option value="threads">Threads投稿</option>
+      <option value="image">画像生成</option>
+      <option value="tool">ツール/手順化</option>
+    </select>
+    <label class="lbl">タグ <span style="font-weight:400;color:#9ca3af;">（カンマ区切り）</span></label>
+    <input class="inp" id="new-tags" type="text" placeholder="例: 記事作成, Threads">
+    <label class="lbl">状態</label>
+    <select class="inp" id="new-status">
+      <option value="draft">下書き</option>
+      <option value="active">使用中</option>
+      <option value="archived">保管</option>
+    </select>
   </div>
   <div class="dlg-foot">
     <button class="btn-sec" onclick="dlgNew.close()">キャンセル</button>
@@ -857,8 +960,12 @@ label.lbl:first-child { margin-top:0; }
 
 <script>
 let cur = null, curTab = 'view', isDirty = false;
+let originalContent = '';
 let histLoadedFor = null; // どのファイルの履歴がドロップダウンに入っているか
 const pathIdMap = new Map(); // path → DOM安全なID（日本語対応）
+let metaCache = {};
+let favoriteFilter = false;
+let searchTimer = null;
 
 function pathToId(path) {
   if (!pathIdMap.has(path)) {
@@ -890,6 +997,8 @@ function updateCharCount() {
 
 (async function init() {
   await refreshTree();
+  await refreshRecent();
+  await refreshTagFilters();
   await refreshGHStatus();
   await refreshStatus();
 })();
@@ -976,15 +1085,18 @@ function renderTreeNodes(nodes, container, depth) {
       const thumbUrl = imgIndexCache[node.path];
       const mtimeStr = node.mtime ? formatMtime(node.mtime) : '';
       const summaryStr = node.summary ? esc(node.summary) : '';
+      const badges = renderBadges(node);
       const innerRows = `
         <div class="file-row-name">📄 ${node.name}</div>
         ${summaryStr ? `<div class="file-summary">${summaryStr}</div>` : ''}
+        ${badges}
         ${mtimeStr   ? `<div class="file-mtime">${mtimeStr}</div>`   : ''}`;
       if (thumbUrl) {
-        row.innerHTML = `<img class="file-thumb" src="${thumbUrl}" loading="lazy"><div class="file-row-inner">${innerRows}</div><span class="dot"></span>`;
+        row.innerHTML = `<span class="star ${node.favorite ? 'on' : ''}" title="お気に入り">★</span><img class="file-thumb" src="${thumbUrl}" loading="lazy"><div class="file-row-inner">${innerRows}</div><span class="dot"></span>`;
       } else {
-        row.innerHTML = `<div class="file-row-inner">${innerRows}</div><span class="dot"></span>`;
+        row.innerHTML = `<span class="star ${node.favorite ? 'on' : ''}" title="お気に入り">★</span><div class="file-row-inner">${innerRows}</div><span class="dot"></span>`;
       }
+      row.querySelector('.star').addEventListener('click', e => { e.stopPropagation(); toggleFavorite(node.path); });
       row.addEventListener('click', () => openFile(node.path));
       row.addEventListener('contextmenu', e => showCtxMenu(e, { type: 'file', path: node.path, name: node.name }));
       // ドラッグ（ファイルを別フォルダへ）
@@ -993,6 +1105,31 @@ function renderTreeNodes(nodes, container, depth) {
       container.appendChild(row);
     }
   });
+}
+
+function renderBadges(item) {
+  const status = item.status || '';
+  const statusLabel = { draft:'下書き', active:'使用中', archived:'保管' }[status] || status;
+  const tags = Array.isArray(item.tags) ? item.tags : [];
+  const bits = [];
+  if (status) bits.push(`<span class="badge status-${esc(status)}">${esc(statusLabel)}</span>`);
+  tags.slice(0, 3).forEach(t => bits.push(`<span class="badge">#${esc(t)}</span>`));
+  return bits.length ? `<div class="file-badges">${bits.join('')}</div>` : '';
+}
+
+function renderCompactFileList(files, emptyText) {
+  if (!files.length) return `<div style="color:#9ca3af;font-size:12px;padding:8px 12px;">${emptyText}</div>`;
+  return files.map(f => `
+    <div class="file-row" onclick="openFile('${escAttr(f.path)}')" style="padding-left:14px">
+      <span class="star ${f.favorite ? 'on' : ''}" onclick="event.stopPropagation();toggleFavorite('${escAttr(f.path)}')" title="お気に入り">★</span>
+      <div class="file-row-inner">
+        <div class="file-row-name">📄 ${esc(f.name)}</div>
+        ${f.summary ? `<div class="file-summary">${esc(f.summary)}</div>` : ''}
+        ${f.excerpt ? `<div class="file-summary">${esc(f.excerpt)}</div>` : ''}
+        ${renderBadges(f)}
+        ${f.mtime ? `<div class="file-mtime">${formatMtime(f.mtime)}</div>` : ''}
+      </div>
+    </div>`).join('');
 }
 
 function collectFolderPaths(nodes, depth, result) {
@@ -1018,13 +1155,15 @@ async function refreshTree() {
   if (stored && sel && sel.value !== stored) sel.value = stored;
   const sort = (sel && sel.value) || stored || 'name_asc';
   try {
-    const [data, info, imgIdx] = await Promise.all([
+    const [data, info, imgIdx, meta] = await Promise.all([
       api('/api/files?sort=' + encodeURIComponent(sort)),
       api('/api/folder-info'),
       api('/api/images/index'),
+      api('/api/meta'),
     ]);
     folderInfoCache = info;
     imgIndexCache   = imgIdx;
+    metaCache       = meta;
     const tree = document.getElementById('tree');
     tree.innerHTML = '';
     pathIdMap.clear();
@@ -1036,7 +1175,63 @@ async function refreshTree() {
       opt.value = f.path; opt.textContent = f.label;
       folderSel.appendChild(opt);
     });
+    await refreshTagFilters();
   } catch(e) { toast('ファイル一覧の読み込み失敗: ' + e.message, 'err'); }
+}
+
+async function refreshRecent() {
+  try {
+    const d = await api('/api/recent?limit=5');
+    document.getElementById('recent-list').innerHTML = renderCompactFileList(d.files || [], '最近編集したファイルはまだありません');
+  } catch(e) {}
+}
+
+async function refreshTagFilters() {
+  try {
+    const d = await api('/api/tags');
+    const tagSel = document.getElementById('search-tag');
+    const statusSel = document.getElementById('search-status');
+    const keepTag = tagSel.value, keepStatus = statusSel.value;
+    tagSel.innerHTML = '<option value="">タグ全部</option>' + (d.tags || []).map(t => `<option value="${esc(t)}">#${esc(t)}</option>`).join('');
+    statusSel.innerHTML = '<option value="">状態全部</option>' + (d.statuses || []).map(s => `<option value="${esc(s)}">${esc({draft:'下書き',active:'使用中',archived:'保管'}[s] || s)}</option>`).join('');
+    tagSel.value = keepTag;
+    statusSel.value = keepStatus;
+  } catch(e) {}
+}
+
+function onSearchInput() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(runSearch, 180);
+}
+
+function toggleFavoriteFilter() {
+  favoriteFilter = !favoriteFilter;
+  document.getElementById('search-fav').classList.toggle('active', favoriteFilter);
+  runSearch();
+}
+
+async function runSearch() {
+  const q = document.getElementById('search-q').value.trim();
+  const tag = document.getElementById('search-tag').value;
+  const status = document.getElementById('search-status').value;
+  const searching = q || tag || status || favoriteFilter;
+  document.getElementById('tree').style.display = searching ? 'none' : '';
+  document.getElementById('recent-title').style.display = searching ? 'none' : '';
+  document.getElementById('recent-list').style.display = searching ? 'none' : '';
+  const box = document.getElementById('search-results');
+  box.style.display = searching ? 'block' : 'none';
+  if (!searching) return;
+  box.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:8px 12px;">検索中...</div>';
+  try {
+    const url = '/api/search?q=' + encodeURIComponent(q) +
+      '&tag=' + encodeURIComponent(tag) +
+      '&status=' + encodeURIComponent(status) +
+      '&favorite=' + (favoriteFilter ? '1' : '0');
+    const d = await api(url);
+    box.innerHTML = `<div class="side-section-title">検索結果 ${d.results.length}件</div>` + renderCompactFileList(d.results || [], '見つかりませんでした');
+  } catch(e) {
+    box.innerHTML = '<div style="color:#dc2626;font-size:12px;padding:8px 12px;">検索失敗: '+esc(e.message)+'</div>';
+  }
 }
 
 // ═══ ファイルを開く ═══
@@ -1045,20 +1240,75 @@ async function openFile(path) {
   try {
     const data = await api('/api/content?path=' + encodeURIComponent(path));
     cur = path; isDirty = false;
+    originalContent = data.content || '';
     const parts = path.split('/');
     document.getElementById('fname').textContent = parts[parts.length-1];
     document.getElementById('fpath').textContent = parts.length > 1 ? parts.slice(0,-1).join('/') + '/' : '';
     document.getElementById('file-bar').style.display = 'flex';
     document.getElementById('tabs').style.display = 'flex';
+    document.getElementById('meta-bar').style.display = 'flex';
     document.getElementById('unsaved').style.display = 'none';
     document.querySelectorAll('.file-row').forEach(r => r.classList.remove('active'));
     const el = document.getElementById(pathToId(path));
     if (el) el.classList.add('active');
     document.getElementById('edit-ta').value = data.content || '';
+    syncMetaBar();
     updateCharCount();
+    refreshEditPreview();
     if (curTab === 'help') curTab = 'view';
     showTab(curTab);
   } catch(e) { toast('ファイルを開けませんでした: ' + e.message, 'err'); }
+}
+
+function currentMeta() {
+  return Object.assign({ favorite:false, tags:[], status:'active' }, metaCache[cur] || {});
+}
+
+function syncMetaBar() {
+  if (!cur) return;
+  const meta = currentMeta();
+  document.getElementById('meta-fav').classList.toggle('on', !!meta.favorite);
+  document.getElementById('meta-status').value = meta.status || 'active';
+  document.getElementById('meta-tags').value = (meta.tags || []).join(', ');
+}
+
+function readMetaBar() {
+  return {
+    path: cur,
+    favorite: document.getElementById('meta-fav').classList.contains('on'),
+    status: document.getElementById('meta-status').value || 'active',
+    tags: document.getElementById('meta-tags').value.split(',').map(s => s.trim()).filter(Boolean),
+  };
+}
+
+async function saveCurrentMeta() {
+  if (!cur) return;
+  try {
+    const d = await api('/api/meta', 'POST', readMetaBar());
+    metaCache[cur] = d.meta;
+    await refreshTree();
+    await refreshRecent();
+    await runSearch();
+    toast('分類を更新しました', 'ok');
+  } catch(e) { toast('分類の保存失敗: ' + e.message, 'err'); }
+}
+
+async function toggleCurrentFavorite() {
+  document.getElementById('meta-fav').classList.toggle('on');
+  await saveCurrentMeta();
+}
+
+async function toggleFavorite(path) {
+  try {
+    const meta = Object.assign({ favorite:false, tags:[], status:'active' }, metaCache[path] || {});
+    meta.favorite = !meta.favorite;
+    const d = await api('/api/meta', 'POST', Object.assign({ path }, meta));
+    metaCache[path] = d.meta;
+    if (cur === path) syncMetaBar();
+    await refreshTree();
+    await refreshRecent();
+    await runSearch();
+  } catch(e) { toast('お気に入り更新失敗: ' + e.message, 'err'); }
 }
 
 // ═══ タブ切り替え ═══
@@ -1076,6 +1326,7 @@ function showTab(tab) {
   }
   document.getElementById('pane-' + tab).style.display = 'block';
   if (tab === 'view') { renderMD(document.getElementById('edit-ta').value); loadImgGallery(); }
+  if (tab === 'edit') refreshEditPreview();
   if (tab === 'hist') loadHist();
   if (tab === 'diff') loadDiff();
 }
@@ -1292,6 +1543,7 @@ document.getElementById('ctx-delete').addEventListener('click', async () => {
       cur = null;
       document.getElementById('file-bar').style.display = 'none';
       document.getElementById('tabs').style.display = 'none';
+      document.getElementById('meta-bar').style.display = 'none';
       document.getElementById('pane-welcome').style.display = 'block';
     }
     await refreshTree();
@@ -1434,6 +1686,7 @@ async function copyShareUrl() {
 function showHelp() {
   document.getElementById('file-bar').style.display = 'none';
   document.getElementById('tabs').style.display = 'none';
+  document.getElementById('meta-bar').style.display = 'none';
   ['welcome','view','edit','hist','diff'].forEach(p =>
     document.getElementById('pane-'+p).style.display = 'none'
   );
@@ -1441,7 +1694,7 @@ function showHelp() {
 }
 
 // ═══ Markdown描画 ═══
-function renderMD(md) {
+function renderMD(md, targetId='pane-view-md') {
   // コードブロックを先に抜き出してプレースホルダーに置き換える（マークダウン変換から保護）
   const rawBlocks = [];
   const placeholder = (i) => `\x00CB${i}\x00`;
@@ -1483,7 +1736,7 @@ function renderMD(md) {
     return `<div class="code-wrap"><span class="code-char-count">${charCount} 字</span><button class="code-copy-btn" onclick="copyCodeBlock(this)">📋 コピー</button><pre><code data-raw="${encodeURIComponent(raw)}">${escaped}</code></pre></div>`;
   });
 
-  document.getElementById('pane-view-md').innerHTML = '<p>' + html + '</p>';
+  document.getElementById(targetId).innerHTML = '<p>' + html + '</p>';
 }
 
 // ═══ 編集 ═══
@@ -1491,6 +1744,39 @@ function onEdit() {
   isDirty = true;
   document.getElementById('unsaved').style.display = 'inline';
   updateCharCount();
+  refreshEditPreview();
+}
+
+function refreshEditPreview() {
+  const preview = document.getElementById('edit-preview');
+  if (!preview) return;
+  renderMD(document.getElementById('edit-ta').value, 'edit-preview');
+}
+
+function buildSimpleDiff(oldText, newText) {
+  const oldLines = oldText.split('\n');
+  const newLines = newText.split('\n');
+  const max = Math.max(oldLines.length, newLines.length);
+  const rows = [];
+  for (let i = 0; i < max; i++) {
+    const left = oldLines[i], right = newLines[i];
+    if (left === right) {
+      rows.push(`<tr><td class="ds-ctx">${esc(left || '')}</td><td class="ds-div"></td><td class="ds-ctx">${esc(right || '')}</td></tr>`);
+    } else {
+      rows.push(`<tr><td class="${left === undefined ? 'ds-empty' : 'ds-del-left'}">${left === undefined ? '' : esc(left)}</td><td class="ds-div"></td><td class="${right === undefined ? 'ds-empty' : 'ds-add-right'}">${right === undefined ? '' : esc(right)}</td></tr>`);
+    }
+  }
+  return `<div class="diff-hdr">未保存差分: 開いた時点 → 編集中</div><table class="diff-sbs"><tbody>${rows.join('')}</tbody></table>`;
+}
+
+function showWorkingDiff() {
+  if (!cur) return;
+  const text = document.getElementById('edit-ta').value;
+  curTab = 'diff';
+  ['welcome','view','edit','hist','diff','help'].forEach(p => document.getElementById('pane-'+p).style.display = 'none');
+  ['view','edit','hist','diff'].forEach(t => document.getElementById('tab-'+t).classList.toggle('active', t === 'diff'));
+  document.getElementById('pane-diff').style.display = 'block';
+  document.getElementById('diff-out').innerHTML = buildSimpleDiff(originalContent, text);
 }
 document.addEventListener('keydown', async e => {
   if ((e.ctrlKey||e.metaKey) && e.key==='s') {
@@ -1501,11 +1787,14 @@ document.addEventListener('keydown', async e => {
 });
 async function saveFile() {
   try {
-    await api('/api/content','POST',{path:cur, content:document.getElementById('edit-ta').value});
+    const content = document.getElementById('edit-ta').value;
+    await api('/api/content','POST',{path:cur, content});
+    originalContent = content;
     isDirty = false;
     document.getElementById('unsaved').style.display = 'none';
     toast('ファイルを保存しました（Ctrl+S）', 'ok');
     await refreshStatus();
+    await refreshRecent();
   } catch(e) { toast('保存失敗: '+e.message,'err'); }
 }
 
@@ -1519,6 +1808,8 @@ async function doCommit() {
     toast('✅ 保存しました！ ['+d.hash+'] '+d.message,'ok');
     document.getElementById('ci').value = '';
     await refreshStatus();
+    await refreshTree();
+    await refreshRecent();
     if (curTab==='hist') loadHist();
   } catch(e) { toast(e.message,'err'); }
 }
@@ -1529,6 +1820,12 @@ async function refreshStatus() {
     const d = await api('/api/status');
     document.getElementById('hdr-changes').textContent =
       d.changes.length > 0 ? '● '+d.changes.length+'件の未コミット変更' : '';
+    const sync = [];
+    if (d.ahead) sync.push(`未Push ${d.ahead}`);
+    if (d.behind) sync.push(`未Pull ${d.behind}`);
+    document.getElementById('git-summary').textContent =
+      d.changes.length ? `${d.changes.length}件の変更: ${d.details.slice(0,2).map(x => x.label + ' ' + x.path).join(' / ')}${d.details.length > 2 ? '...' : ''}` :
+      (sync.length ? sync.join(' / ') : (d.branch ? `Git: ${d.branch}` : ''));
   } catch(e){}
 }
 
@@ -1700,11 +1997,17 @@ async function doNewFile() {
   const folderTxt = document.getElementById('new-folder-txt').value.trim();
   const folder = folderTxt || document.getElementById('new-folder').value;
   const name = document.getElementById('new-name').value.trim();
+  const title = document.getElementById('new-title').value.trim();
+  const template = document.getElementById('new-template').value;
+  const tags = document.getElementById('new-tags').value.split(',').map(s => s.trim()).filter(Boolean);
+  const status = document.getElementById('new-status').value;
   if(!name){toast('ファイル名を入力してください','err');return;}
   try {
-    const d=await api('/api/new','POST',{folder,name});
+    const d=await api('/api/new','POST',{folder,name,title,template,tags,status});
     dlgNew.close();
     document.getElementById('new-name').value='';
+    document.getElementById('new-title').value='';
+    document.getElementById('new-tags').value='';
     document.getElementById('new-folder-txt').value='';
     await refreshTree();
     await openFile(d.path);
@@ -1733,17 +2036,15 @@ document.getElementById('gh-pill').addEventListener('click', async()=>{
   try{
     const d=await api('/api/github/config');
     document.getElementById('gh-url').value=d.github_url||'';
-    document.getElementById('gh-tok').value='';
-    document.getElementById('gh-tok').placeholder=d.has_token?'（設定済み — 変更する場合のみ入力）':'ghp_xxxxxxxxxxxx';
-    document.getElementById('gh-tok-status').textContent=d.has_token?'✅ トークン設定済み':'';
+    document.getElementById('gh-token-note').innerHTML=d.token_managed_by_secret
+      ? '✅ トークンは Google Cloud Secret Manager の <code>prompt-vault-github-token</code> で管理中です。'
+      : 'Cloud Run の認証トークンは Google Cloud Secret Manager の <code>prompt-vault-github-token</code> で管理します。';
   }catch(e){}
   dlgGH.showModal();
 });
 async function saveGH(){
   const url=document.getElementById('gh-url').value.trim();
-  const tok=document.getElementById('gh-tok').value.trim();
   const body={github_url:url};
-  if(tok) body.github_token=tok;
   try{
     await api('/api/github/config','POST',body);
     dlgGH.close();
@@ -1769,6 +2070,7 @@ async function doPull(){
 }
 function togglePW(){
   const i=document.getElementById('gh-tok');
+  if(!i) return;
   i.type=i.type==='password'?'text':'password';
 }
 
@@ -1782,6 +2084,7 @@ async function api(url,method='GET',body=null){
   return data;
 }
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escAttr(s){return esc(s).replace(/'/g,'&#39;');}
 function toast(msg,type='info'){
   const box=document.getElementById('toast-box');
   const el=document.createElement('div');

@@ -1,0 +1,13 @@
+.git
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.config.json
+画面/
+*.docx
+*.log
+pv5001.*.log
+.DS_Store
+Thumbs.db

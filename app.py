@@ -9,6 +9,8 @@ import subprocess
 import webbrowser
 import threading
 import secrets
+import urllib.parse
+import urllib.request
 from pathlib import Path
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file
 
@@ -16,6 +18,7 @@ VAULT = Path(__file__).parent
 CONFIG_FILE  = VAULT / '.config.json'
 SHARES_FILE  = VAULT / '.shares.json'
 IMAGES_DIR   = VAULT / '_images'
+META_FILE    = VAULT / '.prompt-meta.json'
 IGNORE_DIRS  = {'.git', '__pycache__', 'templates', 'static', 'node_modules',
                 '.venv', 'venv', '.env', '_images'}
 IGNORE_FILES = {'app.py', 'pm.py', '.gitignore', 'start.bat', 'start.sh'}
@@ -56,6 +59,14 @@ app.permanent_session_lifetime = timedelta(days=30)  # 30日間ログイン維�
 # ローカル起動時は認証なし（環境変数未設定）
 VAULT_PASSWORD = os.environ.get('VAULT_PASSWORD', '')
 AUTH_ENABLED = bool(VAULT_PASSWORD)
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+ALLOWED_GOOGLE_EMAILS = {
+    e.strip().lower()
+    for e in os.environ.get('ALLOWED_GOOGLE_EMAILS', 'henachoko.se.pm@gmail.com').split(',')
+    if e.strip()
+}
+GOOGLE_AUTH_ENABLED = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)
 
 def login_required(f):
     """認証が必要なルートに付けるデコレータ"""
@@ -68,6 +79,12 @@ def login_required(f):
             return redirect('/login')
         return f(*args, **kwargs)
     return decorated
+
+def external_url(path):
+    base = os.environ.get('PUBLIC_BASE_URL', '').rstrip('/')
+    if base:
+        return base + path
+    return url_for(path.strip('/').replace('/', '_'), _external=True)
 
 # ── ユーティリティ ──────────────────────────────────────────────────
 
@@ -98,6 +115,15 @@ def save_config(data):
 
 def init_git_remote():
     """起動時にGitHub設定とgit userを自動復元する（クラウド環境用）"""
+    url   = os.environ.get('GITHUB_URL', '')
+    token = os.environ.get('GITHUB_TOKEN', '')
+    branch = os.environ.get('GITHUB_BRANCH', 'master')
+
+    # Cloud Run のビルドでは .git が含まれないことがある。
+    # その場合は GitHub から履歴を復元して、履歴・差分・Push/Pull を使える状態にする。
+    if not (VAULT / '.git').exists():
+        run_git('git init')
+
     # git commit に必要な user 設定（未設定だとコミットエラーになる）
     r_name  = run_git('git config user.name')
     r_email = run_git('git config user.email')
@@ -106,14 +132,12 @@ def init_git_remote():
     if not r_email.stdout.strip():
         run_git('git config user.email "vault@prompt-vault.local"')
 
-    url   = os.environ.get('GITHUB_URL', '')
-    token = os.environ.get('GITHUB_TOKEN', '')
     if not url:
         return  # 環境変数未設定 = ローカル環境
 
     # .config.json が存在しない場合は環境変数から自動生成
     if not CONFIG_FILE.exists():
-        save_config({'github_url': url, 'github_token': token})
+        save_config({'github_url': url})
 
     remote_url = build_remote_url(url, token)
     r = run_git('git remote')
@@ -121,6 +145,15 @@ def init_git_remote():
         run_git(f'git remote set-url origin "{remote_url}"')
     else:
         run_git(f'git remote add origin "{remote_url}"')
+
+    # Cloud Run の一時ファイルシステムでは、履歴がない状態から起動する。
+    # HEADをoriginに合わせつつ、デプロイ済みファイルは作業ツリーの変更として残す。
+    fetched_branch = run_git(f'git fetch --depth=50 origin {branch}')
+    if fetched_branch.returncode == 0:
+        run_git(f'git checkout -B {branch}')
+        has_common_history = run_git(f'git merge-base HEAD origin/{branch}')
+        if has_common_history.returncode != 0:
+            run_git(f'git reset --mixed origin/{branch}')
 
     # シャロークローン（Renderのデフォルト）の場合はフル履歴を取得する
     # これにより履歴タブ・差分タブが正しく機能するようになる
@@ -134,10 +167,22 @@ def build_remote_url(url, token):
     """PAT をURLに埋め込んでHTTPS認証を自動化する"""
     if not token or not url:
         return url
+    token = re.sub(r'\s+', '', token.strip())
+    if not token:
+        return url.strip()
     url = url.strip()
     if url.startswith('https://'):
-        url = url.replace('https://', f'https://{token}@', 1)
+        safe_token = urllib.parse.quote(token, safe='')
+        url = url.replace('https://', f'https://x-access-token:{safe_token}@', 1)
     return url
+
+def mask_remote_url(remote_info):
+    """Git remote表示からPATなどの認証情報を必ず除去する"""
+    if not remote_info:
+        return ''
+    masked = re.sub(r'https://[^@\s]+@', 'https://', remote_info)
+    masked = re.sub(r'https://gh[pousr]_[^\s/]+', 'https://***', masked)
+    return masked
 
 # ── フォルダ説明 ────────────────────────────────────────────────────
 
@@ -292,8 +337,55 @@ def get_file_summary(file_path):
         pass
     return ''
 
-def build_tree(path, rel='', sort='name_asc'):
+def load_prompt_meta():
+    if META_FILE.exists():
+        try:
+            return json.loads(META_FILE.read_text(encoding='utf-8'))
+        except Exception:
+            return {}
+    return {}
+
+def save_prompt_meta(data):
+    META_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True), encoding='utf-8')
+
+def normalize_prompt_meta(item):
+    return {
+        'favorite': bool(item.get('favorite', False)),
+        'tags': [str(t).strip() for t in item.get('tags', []) if str(t).strip()],
+        'status': str(item.get('status', 'active') or 'active').strip(),
+    }
+
+def get_prompt_meta(path, meta=None):
+    meta = meta if meta is not None else load_prompt_meta()
+    return normalize_prompt_meta(meta.get(path, {}))
+
+def iter_prompt_files():
+    for file_path in VAULT.rglob('*.md'):
+        rel = str(file_path.relative_to(VAULT)).replace('\\', '/')
+        parts = set(file_path.relative_to(VAULT).parts)
+        if parts & IGNORE_DIRS:
+            continue
+        if file_path.name.startswith('.') or file_path.name in IGNORE_FILES:
+            continue
+        yield rel, file_path
+
+def make_excerpt(text, query='', max_len=120):
+    compact = re.sub(r'\s+', ' ', text).strip()
+    if not compact:
+        return ''
+    if query:
+        idx = compact.lower().find(query.lower())
+        if idx >= 0:
+            start = max(0, idx - 36)
+            end = min(len(compact), idx + len(query) + 84)
+            prefix = '...' if start else ''
+            suffix = '...' if end < len(compact) else ''
+            return prefix + compact[start:end] + suffix
+    return compact[:max_len] + ('...' if len(compact) > max_len else '')
+
+def build_tree(path, rel='', sort='name_asc', meta=None):
     """ディレクトリを再帰的にスキャンしてツリーを構築する（空フォルダも表示）"""
+    meta = meta if meta is not None else load_prompt_meta()
     items = []
     try:
         def _nat_key(p):
@@ -320,14 +412,15 @@ def build_tree(path, rel='', sort='name_asc'):
             continue  # 隠しファイル・隠しディレクトリをスキップ
         item_rel = (rel + '/' + item.name).lstrip('/')
         if item.is_dir() and item.name not in IGNORE_DIRS:
-            children = build_tree(item, item_rel, sort)
+            children = build_tree(item, item_rel, sort, meta)
             mtime = item.stat().st_mtime if item.exists() else 0
             items.append({'name': item.name, 'type': 'folder', 'path': item_rel, 'children': children, 'mtime': mtime})
         elif item.is_file() and item.suffix == '.md' and item.name not in IGNORE_FILES:
             try: mtime = item.stat().st_mtime
             except: mtime = 0
             summary = get_file_summary(item)
-            items.append({'name': item.name, 'type': 'file', 'path': item_rel, 'mtime': mtime, 'summary': summary})
+            item_meta = get_prompt_meta(item_rel, meta)
+            items.append({'name': item.name, 'type': 'file', 'path': item_rel, 'mtime': mtime, 'summary': summary, **item_meta})
     return items
 
 @app.route('/api/files')
@@ -335,6 +428,89 @@ def build_tree(path, rel='', sort='name_asc'):
 def api_files():
     sort = request.args.get('sort', 'name_asc')
     return jsonify(build_tree(VAULT, sort=sort))
+
+@app.route('/api/recent')
+@login_required
+def api_recent():
+    limit = int(request.args.get('limit', 12))
+    meta = load_prompt_meta()
+    files = []
+    for rel, file_path in iter_prompt_files():
+        try:
+            mtime = file_path.stat().st_mtime
+        except Exception:
+            mtime = 0
+        files.append({'name': file_path.name, 'path': rel, 'mtime': mtime, 'summary': get_file_summary(file_path), **get_prompt_meta(rel, meta)})
+    files.sort(key=lambda x: x.get('mtime', 0), reverse=True)
+    return jsonify({'files': files[:limit]})
+
+@app.route('/api/search')
+@login_required
+def api_search():
+    query = request.args.get('q', '').strip()
+    tag = request.args.get('tag', '').strip()
+    status = request.args.get('status', '').strip()
+    favorite_only = request.args.get('favorite', '') in {'1', 'true', 'yes'}
+    meta = load_prompt_meta()
+    results = []
+    for rel, file_path in iter_prompt_files():
+        item_meta = get_prompt_meta(rel, meta)
+        if tag and tag not in item_meta['tags']:
+            continue
+        if status and item_meta['status'] != status:
+            continue
+        if favorite_only and not item_meta['favorite']:
+            continue
+        text = file_path.read_text(encoding='utf-8', errors='replace')
+        title = get_file_summary(file_path) or file_path.name
+        haystack = f'{rel}\n{title}\n{text}\n{" ".join(item_meta["tags"])}\n{item_meta["status"]}'
+        if query and query.lower() not in haystack.lower():
+            continue
+        try:
+            mtime = file_path.stat().st_mtime
+        except Exception:
+            mtime = 0
+        results.append({
+            'name': file_path.name,
+            'path': rel,
+            'mtime': mtime,
+            'summary': title,
+            'excerpt': make_excerpt(text, query),
+            **item_meta,
+        })
+    results.sort(key=lambda x: x.get('mtime', 0), reverse=True)
+    return jsonify({'results': results})
+
+@app.route('/api/meta')
+@login_required
+def api_meta_get():
+    return jsonify(load_prompt_meta())
+
+@app.route('/api/meta', methods=['POST'])
+@login_required
+def api_meta_post():
+    data = request.json
+    path = data.get('path', '').strip()
+    if not path:
+        return jsonify({'error': 'パスが空です'}), 400
+    file_path = (VAULT / path).resolve()
+    if not str(file_path).startswith(str(VAULT.resolve())) or not file_path.exists():
+        return jsonify({'error': 'ファイルが見つかりません'}), 404
+    meta = load_prompt_meta()
+    meta[path] = normalize_prompt_meta(data)
+    save_prompt_meta(meta)
+    return jsonify({'ok': True, 'meta': meta[path]})
+
+@app.route('/api/tags')
+@login_required
+def api_tags():
+    tags = set()
+    statuses = set()
+    for item in load_prompt_meta().values():
+        normalized = normalize_prompt_meta(item)
+        tags.update(normalized['tags'])
+        statuses.add(normalized['status'])
+    return jsonify({'tags': sorted(tags), 'statuses': sorted(statuses or {'active'})})
 
 # ── API: ファイル内容 ────────────────────────────────────────────────
 
@@ -460,17 +636,34 @@ def api_new():
     data = request.json
     folder = data.get('folder', '')
     name = data.get('name', '').strip()
+    title = data.get('title', '').strip()
+    template = data.get('template', 'blank').strip()
+    tags = data.get('tags', [])
+    status = data.get('status', 'draft').strip() or 'draft'
     if not name.endswith('.md'):
         name += '.md'
     if folder:
-        file_path = VAULT / folder / name
+        file_path = (VAULT / folder / name).resolve()
     else:
-        file_path = VAULT / name
+        file_path = (VAULT / name).resolve()
+    if not str(file_path).startswith(str(VAULT.resolve())):
+        return jsonify({'error': '不正なパス'}), 400
     if file_path.exists():
         return jsonify({'error': '同名のファイルが既に存在します'}), 400
     file_path.parent.mkdir(parents=True, exist_ok=True)
-    file_path.write_text(f'# {name.replace(".md","")}\n\n', encoding='utf-8')
+    title = title or name.replace('.md', '')
+    templates = {
+        'blank': f'# {title}\n\n',
+        'article': f'# {title}\n\n## 目的\n\n## 読者\n\n## 入力\n\n## 出力形式\n\n## 制約\n\n',
+        'threads': f'# {title}\n\n## 投稿テーマ\n\n## 狙い\n\n## 本文案\n\n## CTA\n\n',
+        'image': f'# {title}\n\n## 画像の目的\n\n## 被写体\n\n## 構図\n\n## スタイル\n\n## 避けたい要素\n\n```yaml\nprompt: \"\"\nnegative_prompt: \"\"\n```\n',
+        'tool': f'# {title}\n\n## 役割\n\n## 入力\n\n## 手順\n\n## 出力\n\n## 品質チェック\n\n',
+    }
+    file_path.write_text(templates.get(template, templates['blank']), encoding='utf-8')
     rel = str(file_path.relative_to(VAULT)).replace('\\', '/')
+    meta = load_prompt_meta()
+    meta[rel] = normalize_prompt_meta({'favorite': False, 'tags': tags, 'status': status})
+    save_prompt_meta(meta)
     return jsonify({'ok': True, 'path': rel})
 
 # ── API: Gitコミット（保存） ─────────────────────────────────────────
@@ -531,10 +724,24 @@ def api_commit():
 def api_status():
     r = run_git('git status --short')
     changes = []
+    details = []
     for line in r.stdout.strip().split('\n'):
         if line.strip():
             changes.append(line)
-    return jsonify({'changes': changes})
+            code = line[:2].strip() or line[:2]
+            path = line[3:].strip()
+            if ' -> ' in path:
+                path = path.split(' -> ', 1)[1]
+            label = {'M': '変更', 'A': '追加', 'D': '削除', 'R': '名前変更', '??': '未追跡'}.get(code, '変更')
+            details.append({'code': code, 'path': path, 'label': label, 'raw': line})
+    branch = run_git_args('branch', '--show-current').stdout.strip()
+    ahead_behind = run_git_args('rev-list', '--left-right', '--count', 'HEAD...@{upstream}')
+    ahead = behind = 0
+    if ahead_behind.returncode == 0:
+        parts = ahead_behind.stdout.strip().split()
+        if len(parts) == 2:
+            ahead, behind = int(parts[0]), int(parts[1])
+    return jsonify({'changes': changes, 'details': details, 'branch': branch, 'ahead': ahead, 'behind': behind})
 
 # ── API: 履歴 ───────────────────────────────────────────────────────
 
@@ -624,11 +831,10 @@ def api_restore():
 @login_required
 def api_github_config_get():
     cfg = load_config()
-    # トークンはマスクして返す
-    token = cfg.get('github_token', '')
-    masked = token[:4] + '****' if len(token) > 4 else ('****' if token else '')
-    return jsonify({'github_url': cfg.get('github_url', ''), 'token_masked': masked,
-                    'has_token': bool(token)})
+    return jsonify({
+        'github_url': cfg.get('github_url', ''),
+        'token_managed_by_secret': bool(os.environ.get('GITHUB_TOKEN', '')),
+    })
 
 @app.route('/api/github/config', methods=['POST'])
 @login_required
@@ -637,13 +843,12 @@ def api_github_config_post():
     cfg = load_config()
     if 'github_url' in data:
         cfg['github_url'] = data['github_url'].strip()
-    if 'github_token' in data and data['github_token']:
-        cfg['github_token'] = data['github_token'].strip()
+    cfg.pop('github_token', None)
     save_config(cfg)
 
     # リモートを設定/更新
     url = cfg['github_url']
-    token = cfg.get('github_token', '')
+    token = os.environ.get('GITHUB_TOKEN', '')
     if url:
         remote_url = build_remote_url(url, token)
         r_check = run_git('git remote')
@@ -667,9 +872,17 @@ def api_github_push():
 
     r = run_git(f'git push -u origin {branch}')
     if r.returncode != 0:
-        # 初回pushの場合は --set-upstream が必要なこともある
         err = r.stderr + r.stdout
-        return jsonify({'error': err}), 500
+        if 'non-fast-forward' in err or 'fetch first' in err or 'tip of your current branch is behind' in err:
+            pulled = run_git(f'git pull --no-rebase origin {branch}')
+            if pulled.returncode != 0:
+                pull_err = (pulled.stderr + pulled.stdout).strip()
+                return jsonify({'error': 'Push前の自動Pullに失敗しました: ' + mask_remote_url(pull_err)}), 500
+            r = run_git(f'git push -u origin {branch}')
+            if r.returncode == 0:
+                return jsonify({'ok': True, 'message': f'GitHubに送信しました（先にPullしてから{branch}ブランチへPush）'})
+            err = r.stderr + r.stdout
+        return jsonify({'error': mask_remote_url(err)}), 500
     return jsonify({'ok': True, 'message': f'GitHubに送信しました（{branch}ブランチ）'})
 
 @app.route('/api/github/pull', methods=['POST'])
@@ -700,10 +913,10 @@ def api_github_pull():
     if not branch:
         branch = 'master'  # 最終フォールバック
 
-    r = run_git(f'git pull origin {branch}')
+    r = run_git(f'git pull --no-rebase origin {branch}')
     if r.returncode != 0:
         err = (r.stderr + r.stdout).strip()
-        return jsonify({'error': err}), 500
+        return jsonify({'error': mask_remote_url(err)}), 500
     return jsonify({'ok': True, 'message': r.stdout.strip() or f'Pull完了（{branch}ブランチ）'})
 
 @app.route('/api/github/status')
@@ -715,7 +928,7 @@ def api_github_status():
     if connected:
         r = run_git('git remote -v')
         remote_info = r.stdout.strip().split('\n')[0] if r.stdout.strip() else ''
-    return jsonify({'connected': connected, 'remote': remote_info})
+    return jsonify({'connected': connected, 'remote': mask_remote_url(remote_info)})
 
 @app.route('/api/debug/git')
 @login_required
@@ -737,7 +950,7 @@ def api_debug_git():
         'log_all_stdout': log_all.stdout[:2000],
         'branch': run_git('git branch --show-current').stdout.strip(),
         'status': run_git('git status --short').stdout[:500],
-        'remote': run_git('git remote -v').stdout[:500],
+        'remote': mask_remote_url(run_git('git remote -v').stdout[:500]),
         'shallow': run_git_args('rev-parse', '--is-shallow-repository').stdout.strip(),
         'head': run_git_args('rev-parse', 'HEAD').stdout.strip(),
     })
@@ -754,9 +967,73 @@ def login():
         if pw == VAULT_PASSWORD:
             session.permanent = True  # 30日間クッキーを保持
             session['logged_in'] = True
+            session['login_method'] = 'password'
             return redirect('/')
         error = 'パスワードが違います'
-    return render_template('login.html', error=error)
+    return render_template('login.html', error=error, google_enabled=GOOGLE_AUTH_ENABLED)
+
+@app.route('/auth/google')
+def auth_google_start():
+    if not GOOGLE_AUTH_ENABLED:
+        return redirect('/login')
+    state = secrets.token_urlsafe(24)
+    session['oauth_state'] = state
+    params = {
+        'client_id': GOOGLE_CLIENT_ID,
+        'redirect_uri': external_url('/auth/google/callback'),
+        'response_type': 'code',
+        'scope': 'openid email profile',
+        'state': state,
+        'prompt': 'select_account',
+    }
+    return redirect('https://accounts.google.com/o/oauth2/v2/auth?' + urllib.parse.urlencode(params))
+
+@app.route('/auth/google/callback')
+def auth_google_callback():
+    if not GOOGLE_AUTH_ENABLED:
+        return redirect('/login')
+    if request.args.get('state') != session.get('oauth_state'):
+        return render_template('login.html', error='Googleログインを確認できませんでした', google_enabled=True), 400
+    code = request.args.get('code', '')
+    if not code:
+        return render_template('login.html', error='Googleログインがキャンセルされました', google_enabled=True), 400
+
+    token_body = urllib.parse.urlencode({
+        'code': code,
+        'client_id': GOOGLE_CLIENT_ID,
+        'client_secret': GOOGLE_CLIENT_SECRET,
+        'redirect_uri': external_url('/auth/google/callback'),
+        'grant_type': 'authorization_code',
+    }).encode('utf-8')
+    token_req = urllib.request.Request(
+        'https://oauth2.googleapis.com/token',
+        data=token_body,
+        headers={'Content-Type': 'application/x-www-form-urlencoded'},
+        method='POST',
+    )
+    try:
+        with urllib.request.urlopen(token_req, timeout=15) as res:
+            token_data = json.loads(res.read().decode('utf-8'))
+        access_token = token_data.get('access_token', '')
+        user_req = urllib.request.Request(
+            'https://openidconnect.googleapis.com/v1/userinfo',
+            headers={'Authorization': f'Bearer {access_token}'},
+        )
+        with urllib.request.urlopen(user_req, timeout=15) as res:
+            user = json.loads(res.read().decode('utf-8'))
+    except Exception:
+        return render_template('login.html', error='Googleログインに失敗しました', google_enabled=True), 400
+
+    email = (user.get('email') or '').lower()
+    if not user.get('email_verified') or email not in ALLOWED_GOOGLE_EMAILS:
+        return render_template('login.html', error='このGoogleアカウントではログインできません', google_enabled=True), 403
+
+    session.permanent = True
+    session['logged_in'] = True
+    session['login_method'] = 'google'
+    session['user_email'] = email
+    session.pop('oauth_state', None)
+    return redirect('/')
 
 @app.route('/logout')
 def logout():
@@ -868,9 +1145,10 @@ init_git_remote()
 
 if __name__ == '__main__':
     threading.Thread(target=open_browser, daemon=True).start()
+    port = int(os.environ.get('PORT', '5000'))
     print('=' * 50)
     print('  Prompt Vault 起動中...')
-    print('  ブラウザが開きます: http://127.0.0.1:5000')
+    print(f'  ブラウザが開きます: http://127.0.0.1:{port}')
     print('  終了するには Ctrl+C を押してください')
     print('=' * 50)
-    app.run(debug=False, port=5000)
+    app.run(debug=False, host='0.0.0.0', port=port)
