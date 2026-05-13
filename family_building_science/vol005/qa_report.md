@@ -4,6 +4,7 @@
 **対象プロンプト:** `family_building_science/vol005/prompt.md`  
 **QA手法:** `team_building_science/_tools/qa_crash_tester.md` に基づく3フェーズ検証  
 **テスト実施者:** Codex（内部シミュレーション）  
+**入出力ログ:** [Vol.005 テスト入出力ログ](./test_results.md)  
 
 ---
 
