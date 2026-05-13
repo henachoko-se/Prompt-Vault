@@ -182,10 +182,9 @@ def init_git_remote():
     # デプロイに混ざったローカル未コミット差分を作業ツリー変更として残さない。
     fetched_branch = run_git(f'git fetch --depth=50 origin {branch}')
     if fetched_branch.returncode == 0:
-        run_git(f'git checkout -B {branch}')
-        has_common_history = run_git(f'git merge-base HEAD origin/{branch}')
-        if has_common_history.returncode != 0:
-            run_git(f'git reset --hard origin/{branch}')
+        run_git(f'git checkout -B {branch} origin/{branch}')
+        run_git(f'git reset --hard origin/{branch}')
+        run_git('git clean -fd -- .')
 
     # シャロークローン（Renderのデフォルト）の場合はフル履歴を取得する
     # これにより履歴タブ・差分タブが正しく機能するようになる
