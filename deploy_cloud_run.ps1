@@ -7,6 +7,10 @@ $GithubUrl = "https://github.com/henachoko-se/Prompt-Vault"
 $GithubBranch = "master"
 $Gcloud = "C:\Users\henac\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"
 $ServiceAccount = "426912242982-compute@developer.gserviceaccount.com"
+$SourceDir = $PSScriptRoot
+
+Push-Location $SourceDir
+try {
 
 & $Gcloud config set project $Project
 
@@ -36,3 +40,7 @@ foreach ($Secret in @("prompt-vault-password", "prompt-vault-github-token", "pro
 $Url = & $Gcloud run services describe $Service --region $Region --format "value(status.url)"
 Write-Host ""
 Write-Host "Prompt Vault deployed:" $Url
+}
+finally {
+  Pop-Location
+}
