@@ -1,5 +1,10 @@
 # Prompt Vault - Codex引継ぎ文書
 
+> 注意: この資料にはRender.com運用時代の古い記述が含まれています。
+> 現在の本番環境はGoogle Cloud Runです。
+> Claude CodeやCodexは、Cloud Run移行後の正しい前提として `CLAUDE.md` と `CLOUD_RUN_CLAUDE_GUIDE.md` を優先してください。
+> Render関連の記述は履歴情報として扱い、本番運用判断には使わないでください。
+
 ## プロジェクト概要
 
 **Prompt Vault** は、AIプロンプト（`.md` ファイル）をブラウザ上で管理・編集・バージョン管理するWebアプリ。

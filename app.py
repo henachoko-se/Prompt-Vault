@@ -101,6 +101,38 @@ def run_git_args(*args):
         encoding='utf-8', errors='replace', cwd=str(VAULT)
     )
 
+MANAGED_META_FILES = {'.folder-info.json', '.prompt-meta.json', '.shares.json'}
+
+def status_path(line):
+    path = line[3:].strip()
+    if ' -> ' in path:
+        path = path.split(' -> ', 1)[1]
+    return path.replace('\\', '/').strip('"')
+
+def is_prompt_managed_path(path):
+    path = path.replace('\\', '/').strip('"')
+    return (
+        path.endswith('.md') or
+        path.endswith('/.gitkeep') or
+        path.startswith('_images/') or
+        path in MANAGED_META_FILES
+    )
+
+def prompt_status_lines():
+    r = run_git('git status --short')
+    lines = [line for line in r.stdout.splitlines() if line.strip()]
+    return [line for line in lines if is_prompt_managed_path(status_path(line))]
+
+def prompt_changed_paths():
+    paths = []
+    seen = set()
+    for line in prompt_status_lines():
+        path = status_path(line)
+        if path and path not in seen:
+            paths.append(path)
+            seen.add(path)
+    return paths
+
 def load_config():
     if CONFIG_FILE.exists():
         return json.loads(CONFIG_FILE.read_text(encoding='utf-8'))
@@ -146,14 +178,14 @@ def init_git_remote():
     else:
         run_git(f'git remote add origin "{remote_url}"')
 
-    # Cloud Run の一時ファイルシステムでは、履歴がない状態から起動する。
-    # HEADをoriginに合わせつつ、デプロイ済みファイルは作業ツリーの変更として残す。
+    # Cloud Run の一時ファイルシステムでは、GitHubを正本として起動する。
+    # デプロイに混ざったローカル未コミット差分を作業ツリー変更として残さない。
     fetched_branch = run_git(f'git fetch --depth=50 origin {branch}')
     if fetched_branch.returncode == 0:
         run_git(f'git checkout -B {branch}')
         has_common_history = run_git(f'git merge-base HEAD origin/{branch}')
         if has_common_history.returncode != 0:
-            run_git(f'git reset --mixed origin/{branch}')
+            run_git(f'git reset --hard origin/{branch}')
 
     # シャロークローン（Renderのデフォルト）の場合はフル履歴を取得する
     # これにより履歴タブ・差分タブが正しく機能するようになる
@@ -674,16 +706,16 @@ def api_commit():
     data = request.json
     message = data.get('message', '').strip()
 
-    r_status = run_git('git status --short')
-    if not r_status.stdout.strip():
+    managed_paths = prompt_changed_paths()
+    if not managed_paths:
         return jsonify({'error': '変更がありません'}), 400
 
-    run_git('git add -A')
+    run_git_args('add', '-A', '--', *managed_paths)
 
     # メッセージが空なら差分情報から自動生成
     if not message:
-        numstat = run_git('git diff --cached --numstat').stdout.strip()
-        status  = run_git('git diff --cached --name-status').stdout.strip()
+        numstat = run_git_args('diff', '--cached', '--numstat', '--', *managed_paths).stdout.strip()
+        status  = run_git_args('diff', '--cached', '--name-status', '--', *managed_paths).stdout.strip()
         if numstat:
             files = []
             total_add = total_del = 0
@@ -722,16 +754,13 @@ def api_commit():
 @app.route('/api/status')
 @login_required
 def api_status():
-    r = run_git('git status --short')
     changes = []
     details = []
-    for line in r.stdout.strip().split('\n'):
+    for line in prompt_status_lines():
         if line.strip():
             changes.append(line)
             code = line[:2].strip() or line[:2]
-            path = line[3:].strip()
-            if ' -> ' in path:
-                path = path.split(' -> ', 1)[1]
+            path = status_path(line)
             label = {'M': '変更', 'A': '追加', 'D': '削除', 'R': '名前変更', '??': '未追跡'}.get(code, '変更')
             details.append({'code': code, 'path': path, 'label': label, 'raw': line})
     branch = run_git_args('branch', '--show-current').stdout.strip()
@@ -892,10 +921,17 @@ def api_github_pull():
     if not cfg.get('github_url'):
         return jsonify({'error': 'GitHubの設定がありません'}), 400
 
-    # 未コミットの変更があるとpullが失敗するので事前チェック
-    r_status = run_git('git status --short')
-    if r_status.stdout.strip():
+    # Prompt Vaultで管理するファイルだけをPull前の未コミット判定に使う。
+    # Cloud Runのデプロイ由来のアプリ本体差分はユーザー操作ではないため、Pullを止めない。
+    if prompt_status_lines():
         return jsonify({'error': '未コミットの変更があります。先にコミット（保存）してからPullしてください。'}), 400
+    raw_status = run_git('git status --short').stdout.strip()
+    stashed = False
+    if raw_status:
+        stash_r = run_git_args('stash', 'push', '-u', '-m', 'prompt-vault-autostash-before-pull')
+        if stash_r.returncode != 0:
+            return jsonify({'error': 'Pull前の一時退避に失敗しました: ' + mask_remote_url(stash_r.stderr + stash_r.stdout)}), 500
+        stashed = True
 
     # 現在のブランチを取得して明示的にpull
     # detached HEAD 状態（Renderデプロイ直後等）でも動くよう複数の方法で検出する
@@ -914,6 +950,11 @@ def api_github_pull():
         branch = 'master'  # 最終フォールバック
 
     r = run_git(f'git pull --no-rebase origin {branch}')
+    if stashed:
+        pop_r = run_git_args('stash', 'pop')
+        if pop_r.returncode != 0:
+            err = (pop_r.stderr + pop_r.stdout).strip()
+            return jsonify({'error': 'Pull後の一時退避復元に失敗しました: ' + mask_remote_url(err)}), 500
     if r.returncode != 0:
         err = (r.stderr + r.stdout).strip()
         return jsonify({'error': mask_remote_url(err)}), 500
