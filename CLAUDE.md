@@ -27,6 +27,9 @@ Claude Code は Render 前提で判断しないでください。
 - Cloud Runのファイルシステムは永続ではないため、Prompt Vault上で編集した内容は「保存」でコミットし、「Push」でGitHubへ送る
 - Cloud Runへのデプロイ後は、必要に応じてPrompt Vault画面で「Pull」してGitHub側の最新状態を取得する
 - Cloud Runでは `.git` がデプロイ対象から除外されるため、アプリ起動時にGitHubの履歴へ接続し直す設計になっている
+- Codex/Claude Codeがローカルで `.md` コンテンツを新規作成・更新した場合、**ローカル保存だけで完了扱いにしない**。ユーザーが明示しなくても、原則として該当ファイルを `git add` → `git commit` → `git push origin master` し、クラウド版Prompt Vaultで表示される必要があるコンテンツはCloud Runへ再デプロイして、ブラウザ更新後に表示される状態まで対応する
+- 上記反映作業では、`git status --short` で対象差分を確認し、無関係な既存変更は触らない。pushがリモート先行で拒否された場合は、作成したコミットを保ったまま `git pull --rebase origin master` で取り込んでから再pushする
+- `gcloud` がSSL証明書エラーで止まる場合は、一時対応を行ってもよいが、最後に変更したgcloud設定を元へ戻す
 
 詳しい移行後の説明は `CLOUD_RUN_CLAUDE_GUIDE.md` を参照してください。
 
