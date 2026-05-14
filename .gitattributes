@@ -1,0 +1,23 @@
+# テキストファイルはLFで統一（Windows/Linux混在環境対策）
+* text=auto eol=lf
+
+# Markdownは明示的にLF指定
+*.md text eol=lf
+
+# Pythonもlf
+*.py text eol=lf
+
+# その他テキスト
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.txt text eol=lf
+*.html text eol=lf
+*.ps1 text eol=lf
+
+# バイナリは変換しない
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
+*.docx binary
