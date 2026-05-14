@@ -20,6 +20,22 @@
 
 ---
 
+## 生成済み画像ファイル
+
+生成済み画像は `assets/` フォルダに保存しています。
+
+| # | 画像ファイル | サイズ |
+|---|-------------|--------|
+| 1 | [vol005_header.png](./assets/vol005_header.png) | 1734 × 907 |
+| 2 | [vol005_manga_p1.png](./assets/vol005_manga_p1.png) | 1024 × 1536 |
+| 3 | [vol005_manga_p2.png](./assets/vol005_manga_p2.png) | 1024 × 1536 |
+| 4 | [vol005_infographic_7_spaces.png](./assets/vol005_infographic_7_spaces.png) | 1672 × 941 |
+| 5 | [vol005_infographic_4_steps.png](./assets/vol005_infographic_4_steps.png) | 1672 × 941 |
+| 6 | [vol005_infographic_checklist.png](./assets/vol005_infographic_checklist.png) | 1672 × 941 |
+| 7 | [vol005_infographic_3_inputs.png](./assets/vol005_infographic_3_inputs.png) | 1672 × 941 |
+
+---
+
 ## note挿入位置
 
 ### 1. noteヘッダー
