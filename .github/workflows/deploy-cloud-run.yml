@@ -1,0 +1,47 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: meeting-opportunity-agent
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy prompt-vault \
+            --source . \
+            --clear-base-image \
+            --region asia-northeast1 \
+            --allow-unauthenticated \
+            --min-instances 0 \
+            --max-instances 2 \
+            --memory 512Mi \
+            --cpu 1 \
+            --project meeting-opportunity-agent \
+            --set-env-vars "GITHUB_URL=https://github.com/henachoko-se/Prompt-Vault,GITHUB_BRANCH=master,PUBLIC_BASE_URL=https://prompt-vault-hvvjnok6mq-an.a.run.app,ALLOWED_GOOGLE_EMAILS=henachoko.se.pm@gmail.com" \
+            --set-secrets "VAULT_PASSWORD=prompt-vault-password:latest,GITHUB_TOKEN=prompt-vault-github-token:latest,SECRET_KEY=prompt-vault-secret-key:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest"
+
+      - name: Enable CPU boost
+        run: |
+          gcloud run services update prompt-vault \
+            --region asia-northeast1 \
+            --cpu-boost \
+            --project meeting-opportunity-agent
