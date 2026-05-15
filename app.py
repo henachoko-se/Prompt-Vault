@@ -19,6 +19,7 @@ CONFIG_FILE  = VAULT / '.config.json'
 SHARES_FILE  = VAULT / '.shares.json'
 IMAGES_DIR   = VAULT / '_images'
 META_FILE    = VAULT / '.prompt-meta.json'
+TOOLS_DIR    = VAULT / 'tools'
 IGNORE_DIRS  = {'.git', '__pycache__', 'templates', 'static', 'node_modules',
                 '.venv', 'venv', '.env', '_images'}
 IGNORE_FILES = {'app.py', 'pm.py', '.gitignore', 'start.bat', 'start.sh'}
@@ -1160,6 +1161,18 @@ def share_image(token, filename):
     if not str(img_path).startswith(str(VAULT.resolve())) or not img_path.exists():
         return '', 404
     return send_file(img_path)
+
+# ── ツールダウンロード ───────────────────────────────────────────────
+
+@app.route('/tools/download/<path:filename>')
+@login_required
+def download_tool(filename):
+    safe = (TOOLS_DIR / filename).resolve()
+    if not str(safe).startswith(str(TOOLS_DIR.resolve())):
+        return '', 403
+    if not safe.exists():
+        return '', 404
+    return send_file(safe, as_attachment=True, download_name=Path(filename).name)
 
 # ── Ping（スリープ防止用）────────────────────────────────────────────
 
