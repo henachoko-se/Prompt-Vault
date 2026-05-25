@@ -1,7 +1,7 @@
 # AIあそび研究所 30企画ランキングプロンプト テスト結果
 
 **実施日:** 2026-05-23  
-**対象プロンプト:** `ai_asobi_kenkyusho/kikaku_ranking_prompt.md`  
+**対象プロンプト:** `ai_asobi_kenkyusho/no01/kikaku_ranking_prompt.md`  
 **実施者:** Codex  
 **テスト種別:** ChatGPT系モデルによる内部実行テスト  
 
@@ -192,7 +192,7 @@ https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?
 
 今回のランキングプロンプトテスト用にも、同じ方式の実行スクリプトを追加した。
 
-- `ai_asobi_kenkyusho/gemini_api_test_runner.py`
+- `ai_asobi_kenkyusho/no01/gemini_api_test_runner.py`
 
 ### 使用予定モデル
 
@@ -222,20 +222,20 @@ APIキーを環境変数に設定した状態で、以下を実行する。
 
 ```powershell
 $env:GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
-python C:\Users\henac\prompt_vault\ai_asobi_kenkyusho\gemini_api_test_runner.py
+python C:\Users\henac\prompt_vault\ai_asobi_kenkyusho\no01\gemini_api_test_runner.py
 ```
 
 別モデルで試す場合は、以下のように指定する。
 
 ```powershell
 $env:GEMINI_TEST_MODEL="gemini-3.1-pro-preview"
-python C:\Users\henac\prompt_vault\ai_asobi_kenkyusho\gemini_api_test_runner.py
+python C:\Users\henac\prompt_vault\ai_asobi_kenkyusho\no01\gemini_api_test_runner.py
 ```
 
 実行に成功すると、Gemini APIの生レスポンスを以下へ保存する。
 
 ```text
-ai_asobi_kenkyusho/gemini_api_test_output.json
+ai_asobi_kenkyusho/no01/gemini_api_test_output.json
 ```
 
 ### 現時点の判定
