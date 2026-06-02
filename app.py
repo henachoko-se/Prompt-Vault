@@ -12,7 +12,7 @@ import secrets
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file, send_from_directory
 
 VAULT = Path(__file__).parent
 CONFIG_FILE  = VAULT / '.config.json'
@@ -1180,6 +1180,17 @@ def download_tool(filename):
 def ping():
     return 'ok', 200
 
+
+# ── QUARTET MUSIC（公開・認証不要）────────────────────────────────────
+
+@app.route('/quartet/')
+@app.route('/quartet/index.html')
+def quartet_index():
+    return send_from_directory('static/quartet', 'index.html')
+
+@app.route('/quartet/<path:filepath>')
+def quartet_static(filepath):
+    return send_from_directory('static/quartet', filepath)
 
 # ── メインページ ─────────────────────────────────────────────────────
 
