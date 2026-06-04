@@ -2,7 +2,7 @@
 
 家具選びで「幅は入る」だけを見て買いそうになり、AIに写真と商品情報を見せて余白・搬入・安全まで確認する話です。
 
-**対応記事:** [Vol.005 『置けるから買う』で止まるな。家具の写真と部屋の画像をAIに見せて、動線・搬入・安全まで確認する技術。](./article.md)
+**対応記事:** [Vol.005 AIに欲しい家具を探してもらい、部屋写真で動線・搬入・安全まで確認する方法](./article.md)
 
 **生成ベース:** [step1_script_maker_kai.md](../../team_building_science/_tools/step1_script_maker_kai.md)（モード②・元ネタ忠実型）  
 **画像生成ベース:** [step2_image_gen_kai.md](../../team_building_science/_tools/step2_image_gen_kai.md)
