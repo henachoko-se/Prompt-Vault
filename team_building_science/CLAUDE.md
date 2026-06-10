@@ -88,6 +88,14 @@ tests/step2/
   test_results.md   ← 毎回上書き
 ```
 
+### 配置厳守ルール
+
+- チームビルディングの科学の新規記事・プロンプト・素材は、必ず `team_building_science/vol[番号]/` 配下に作成する
+- 記事関連ファイルをリポジトリ直下や `team_building_science/` 直下に単発ファイルとして置かない
+- 既存Volと同じく、本文は `article.md`、お土産プロンプトは `prompt.md`、ヘッダー画像は `header_image.md`、SNS投稿は `sns_post.md`、テスト観点は `tests/` 配下に分ける
+- 作業前に `team_building_science/CLAUDE.md` と直近Volのフォルダ構成を確認し、同じ粒度でファイルを作る
+- 一時メモや準備メモを作る場合も、最終push前にVolフォルダへ分解し、準備メモ単体をpushしない
+
 ---
 
 ## 記事ファイルの構成ルール（Vol.76〜99の形式）
