@@ -4,7 +4,7 @@
 
 **対応記事:**
 - チーム版：[号外編「長文の『どこを図解する？』をGPTsに任せる」](./article.md)
-- 家庭版：[号外編「PTAのお便り、誰も読まない理由は『場所』だった」](../../family_building_science/extra01/article.md)
+- 家庭版：[号外編「PTAのお便り・自由研究を68パターンから自動図解する技術」](../../family_building_science/extra01/article.md)
 
 ## 使い方
 
@@ -383,7 +383,7 @@
 　・用途に合う縦横比と画像生成プロンプトまで設計します。
 
 ▼ 得意な素材
-　note記事 / Threads・SNS投稿 / ブログ記事 / PTAのお便り
+　note記事 / Threads・SNS投稿 / ブログ記事 / PTAだより
 　自由研究 / 営業資料 / 提案書 / 社内マニュアル
 　セミナー台本 / 教材・レポート
 
