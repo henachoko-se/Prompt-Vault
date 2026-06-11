@@ -18,20 +18,23 @@
 ## エージェント分担（作成は統合・検証は分離）
 
 記事制作では、**作成系は統括（メイン）エージェントが一貫して担当し、検証系を子エージェントに分離する**。
-役割の詳細・フロー図は `_tools/agent_roles.md` を参照。エージェント定義は `prompt_vault/.claude/agents/` に格納。
+役割の詳細・フロー図は `_tools/agent_roles.md` を参照。Claude Code用の定義は `prompt_vault/.claude/agents/`、Codex用の定義は `prompt_vault/.codex/agents/` に格納。
 
 | エージェント | 担当 |
 |---|---|
 | 統括（メイン） | 記事・図解プロンプト・お土産プロンプト・SNS投稿の作成、指摘の修正、push、完了報告 |
 | article-checker（子） | 記事一式のトンマナ監査（読み取り専用・チェックリスト全項目照合） |
 | prompt-qa-tester（子） | prompt.md の7カテゴリQAと `vol[番号]/tests/` への記録（prompt.md本体は変更しない） |
+| infographic-generator（Codex子） | 図解化ポイントの抽出、画像生成プロンプト作成、画像生成、生成ログ整理 |
+| generated-image-checker（Codex子） | 生成画像の内容一致・可読性・華やかさ・ブランド性・保存性チェック |
 
 ### 実行順序（必須）
 
 1. 統括が記事一式を作成する
 2. **article-checker を起動**して監査 → 必須修正が出なくなるまで「統括が修正 ⇄ 再監査」を繰り返す
 3. **prompt-qa-tester を起動**してQA → 不合格なら統括がV2案を作成し、**ユーザー確認を取ってから** prompt.md に適用 → 再テスト（2と3は並列起動してよい）
-4. 統括が push し、監査・QA結果のサマリー付きで完了報告する
+4. Codexで画像生成する場合は **infographic-generator → generated-image-checker** の順に回し、画像QA不合格なら図解プロンプト修正・再生成・再確認を行う
+5. 統括が push し、監査・QA結果のサマリー付きで完了報告する
 
 子エージェントは会話の文脈を持たないため、依頼時は必ず `vol[番号]/` のフォルダパスを明示する。
 
