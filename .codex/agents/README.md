@@ -22,6 +22,9 @@ Claude Code用の `.claude/agents/` と同じ考え方で、Codexではメイン
 | `infographic-generator.md` | 図解化ポイントの抽出、画像生成プロンプト作成、画像生成 | 生成プロンプト、画像、生成ログ |
 | `zukaishiori-image-producer.md` | 図解しおりPro版ベースで、図解挿入箇所特定から画像制作まで担当 | 図解候補マップ、生成プロンプト、画像ログ |
 | `generated-image-checker.md` | 生成画像の内容一致・可読性・華やかさ・ブランド性チェック | 画像QAレポート、採用/修正判定 |
+| `pre-publish-checker.md` | note公開直前のローカル最終チェック（プレースホルダー残り・画像の揃い・QA合格・リンク/表記整合） | 公開可否判定、公開後にやることリスト |
+
+note下書きのWeb確認と公開直後のページ確認は、ブラウザ操作とユーザーとの対話が必要なためメインエージェントが実行する（手順は `team_building_science/CLAUDE.md` の「公開前・公開後チェック手順」を参照）。
 
 ## 運用原則
 
