@@ -20,6 +20,7 @@ Claude Code用の `.claude/agents/` と同じ考え方で、Codexではメイン
 | `article-checker.md` | 記事一式のトンマナ・構成・読者価値チェック | 重大度別の監査レポート |
 | `prompt-qa-tester.md` | お土産プロンプトやGPTsプロンプトのQA | `tests/` 配下のQA記録と判定 |
 | `infographic-generator.md` | 図解化ポイントの抽出、画像生成プロンプト作成、画像生成 | 生成プロンプト、画像、生成ログ |
+| `zukaishiori-image-producer.md` | 図解しおりPro版ベースで、図解挿入箇所特定から画像制作まで担当 | 図解候補マップ、生成プロンプト、画像ログ |
 | `generated-image-checker.md` | 生成画像の内容一致・可読性・華やかさ・ブランド性チェック | 画像QAレポート、採用/修正判定 |
 
 ## 運用原則
